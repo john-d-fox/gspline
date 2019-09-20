@@ -555,6 +555,9 @@ coef.wald <- function( obj , se = FALSE ) {
 #' @export getFix
 getFix <- function(fit,...) UseMethod("getFix")
 
+##' @rdname getFix
+##' @method getFix multinom
+##' @export
 getFix.multinom <- function(fit,...) {
   ret <- list()
   ret$fixed <- c(t(coef(fit)))
@@ -565,6 +568,9 @@ getFix.multinom <- function(fit,...) {
   ret
 }
 
+##' @rdname getFix
+##' @method getFix lm
+##' @export
 getFix.lm <- function(fit,...) {
   ss <- summary(fit)
   ret <- list()
@@ -574,6 +580,9 @@ getFix.lm <- function(fit,...) {
   ret
 }
 
+##' @rdname getFix
+##' @method getFix glm
+##' @export
 getFix.glm <- function(fit,...) {
   ss <- summary(fit)
   ret <- list()
@@ -583,6 +592,9 @@ getFix.glm <- function(fit,...) {
   ret
 }
 
+##' @rdname getFix
+##' @method getFix lme
+##' @export
 getFix.lme <- function(fit,...) {
   #    if(!require(nlme)) stop("nlme package not available")
   ret <- list()
@@ -592,6 +604,9 @@ getFix.lme <- function(fit,...) {
   ret
 }
 
+##' @rdname getFix
+##' @method getFix gls
+##' @export
 getFix.gls <- function(fit,...) {
   #    if(!require(nlme)) stop("nlme package not available")
   ret <- list()
@@ -603,7 +618,9 @@ getFix.gls <- function(fit,...) {
   ret
 }
 
-
+##' @rdname getFix
+##' @method getFix lmer
+##' @export
 getFix.lmer <- function(fit,...) {
   # 2014 06 04: changed fit@fixef to fixef(fit)
   ret <- list()
@@ -625,7 +642,9 @@ getFix.lmer <- function(fit,...) {
 #     ret
 # }
 
-
+##' @rdname getFix
+##' @method getFix merMod
+##' @export
 getFix.merMod <- function(fit,...) {
   # 2014 06 04: changed fit@fixef to fixef(fit)
   
@@ -637,6 +656,9 @@ getFix.merMod <- function(fit,...) {
   ret
 }
 
+##' @rdname getFix
+##' @method getFix zeroinfl
+##' @export
 getFix.zeroinfl <- function(fit,...){
   ret <- list()
   ret$fixed <- coef(fit)
@@ -646,6 +668,9 @@ getFix.zeroinfl <- function(fit,...){
   ret
 }
 
+##' @rdname getFix
+##' @method getFix mipo
+##' @export
 getFix.mipo <- function( fit, ...){
   # pooled multiple imputation object in mice
   # uses the minimal df for components with non-zero weights
@@ -658,6 +683,9 @@ getFix.mipo <- function( fit, ...){
   ret
 }
 
+##' @rdname getFix
+##' @method getFix MCMCglmm
+##' @export
 getFix.MCMCglmm <- function(fit,...) {
   ret <- list()
   ret$fixed <- apply(fit$Sol, 2, mean)
@@ -679,6 +707,9 @@ getFix.stanfit <- function(fit, pars, include = TRUE, ...) {
   ret
 }
 
+##' @rdname getFix
+##' @method getFix default
+##' @export
 getFix.default <- function(fit, ...) stop(paste("Write a 'getFix' method for class",class(fit)))
 
 

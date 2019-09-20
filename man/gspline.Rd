@@ -14,6 +14,8 @@ gspline(knots, degree = 3, smoothness = pmax(pmin(degree[-1],
 \method{print}{gspline}(x, show = c("knots", "degree", "smoothness", "G",
   "constraint_mat", "estimate_mat"), ...)
 
+\method{print}{gspline_matrix}(x, ...)
+
 \method{knots}{gspline}(Fn, ...)
 }
 \arguments{

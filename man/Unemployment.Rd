@@ -20,5 +20,6 @@ Monthly unemployment data for Canada for the period 1995-01-01 through
 
  plot(unemployment ~ date, type="l", lwd=2, data=Unemployment)
 
+
 }
 \keyword{datasets}

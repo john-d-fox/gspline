@@ -737,6 +737,9 @@ print.gspline <- function(x, show = c('knots','degree','smoothness','G','constra
     invisible(ret)
 }
 
+##' @rdname gspline
+##' @method print gspline_matrix
+##' @export
 print.gspline_matrix <- function(x, ...) {
     x <- zapsmall(x)
     class(x) <- "matrix"

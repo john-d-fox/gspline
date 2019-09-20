@@ -13,11 +13,34 @@
 \alias{getFix.MCMCglmm}
 \alias{getFix.stanfit}
 \alias{getFix.default}
+\alias{getFix.lmer}
 \title{Get Information on Fixed Effects From a Model Object}
 \usage{
 getFix(fit, ...)
 
+\method{getFix}{multinom}(fit, ...)
+
+\method{getFix}{lm}(fit, ...)
+
+\method{getFix}{glm}(fit, ...)
+
+\method{getFix}{lme}(fit, ...)
+
+\method{getFix}{gls}(fit, ...)
+
+\method{getFix}{lmer}(fit, ...)
+
+\method{getFix}{merMod}(fit, ...)
+
+\method{getFix}{zeroinfl}(fit, ...)
+
+\method{getFix}{mipo}(fit, ...)
+
+\method{getFix}{MCMCglmm}(fit, ...)
+
 \method{getFix}{stanfit}(fit, pars, include = TRUE, ...)
+
+\method{getFix}{default}(fit, ...)
 }
 \arguments{
 \item{fit}{A fitted model object}
