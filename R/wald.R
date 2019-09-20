@@ -43,6 +43,138 @@
 # ...etc as above
 
 
+
+
+#' Wald Test of a General Linear Hypothesis for the 'Fixed' Portion of a Model
+#' 
+#' General Linear Hypothesis with Wald test for, e.g., \code{lm}, \code{glm},
+#' \code{lme}, \code{nlme} and \code{lmer} objects.  Can be extended to other
+#' classes by writing an appropriate \code{\link{getFix}} method.
+#' 
+#' Tests a general linear hypothesis for the linear fixed portion of a model.
+#' The hypothesis can be specified in a variety of ways such as a hypothesis
+#' matrix or a pattern that is used as a regular expression to be matched with
+#' the names of coefficients of the model. A number of tools are available to
+#' facilitate the generation of hypothesis matrices.
+#' 
+#' Usage:
+#' 
+#' \code{wald(fit, L)} where \code{L} is a hypothesis matrix
+#' 
+#' \code{wald(fit, "pat")} where \code{"pat"} is a regular expression (see
+#' \code{\link{regex}}) used to match names of coefficients of fixed effects.
+#' e.g. \code{wald( fit, ":.*:")} tests all second and higher order
+#' interactions.
+#' 
+#' \code{wald(fit, c(2, 5, 6))} to test 2nd, 5th and 6th coefficients.
+#' 
+#' \code{wald(fit, list(hyp1 = c(2, 5, 6), H2 = "pat"))} for more than one
+#' hypothesis matrix.
+#' 
+#' %There are number of functions to help construct hypothesis matrices. See in
+#' %particular \code{\link{Lfx}}.
+#' 
+#' To extend the \code{wald} function to a new class of objects, one needs to
+#' write a \code{\link{getFix}} method to extract estimated coefficients, their
+#' estimated covariance matrix, and the denominator degrees of freedom for each
+#' estimated coefficient.
+#' 
+#' @aliases wald as.data.frame.wald print.wald
+#' @param fit a model for which a \code{getFix} method exists.
+#' @param Llist a hypothesis matrix or a pattern to be matched or a list of
+#' these.
+#' @param clevel level for confidence intervals. No confidence intervals if
+#' \code{clevel} is \code{NULL}.
+#' @param pred (default \code{NULL}) a data frame to use to create a model
+#' matrix.  This is an alternative to `full` when the model matrix needs to be
+#' based on a data frame other than the data frame used for fitting the model.
+#' @param data data frame used as \code{"data"} attribute fot list elements
+#' returned only if the corresponding element of \code{Llist} has a \code{NULL}
+#' data attribute
+#' @param debug (default \code{FALSE}) produce verbose information
+#' @param maxrows maximum number of rows of hypothesis matrix for which a full
+#' variance-covariance matrix is returned
+#' @param full if \code{TRUE}, the hypothesis matrix is the model matrix for
+#' \code{fit} such that the estimated coefficients are the predicted values for
+#' the fixed portion of the model. This is designed to allow the calculation of
+#' standard errors for models for which the \code{predict} method does not
+#' provide them.
+#' @param fixed normally if \code{Llist} is a character string, it's treated as
+#' a regular expression; if \code{fixed} is \code{TRUE}, \code{Llist} is
+#' interpreted literally, i.e., characters that have a special meaning in
+#' regular expressions are interpreted literally.
+#' @param invert if \code{Llist} is a character string to be used as a regular
+#' expression, \code{invert == TRUE} causes the matches to be inverted so that
+#' coefficients that do \emph{not} match will be selected.
+#' @param method \code{"svd"} (current default) or \code{"qr"} is the method
+#' used to find the full rank version of the hypothesis matrix.  (\code{"svd"}
+#' has correctly identified the rank of a large hypothesis matrix where
+#' \code{"qr"} has failed.)
+#' @param pars passed to \code{\link[rstan]{extract}} for \code{"stanfit"}
+#' objects.
+#' @param x a \code{"wald"} object.
+#' @param df denominator degrees of freedom (overrides usual value).
+#' @param se multiplier (default 2) for standard errors in computing confidence
+#' limits.
+#' @param digits,round number of digits to the right of the decimal.
+#' @param sep separator character, for creating names, default is \code{""} (no
+#' separator).
+#' @param which which element(s) of a \code{"wald"} object to convert to a data
+#' frame.
+#' @param row.names optional row names for the resulting data frame.
+#' @param ...,optional to match generic, ignored.
+#' @return An object of class \code{wald}.
+#' @author Georges Monette
+#' @seealso To extend to new models see \code{\link{getFix}}. To generate
+#' hypothesis matrices for general splines see \code{\link{gspline}}.
+#' @examples
+#' 
+#' 
+#' if (require(nlme)){
+#' ###
+#' ### Using wald to create and plot a data frame with predicted values
+#' ###
+#' MathAchieve$Sector <- MathAchSchool[as.character(MathAchieve$School), "Sector"]
+#' fit <- lme(MathAch ~ (SES+I(SES^2)) * Sex * Sector, MathAchieve, random = ~ 1|School)
+#' summary(fit)
+#' pred <- expand.grid( SES = seq(-2,2,.1), Sex = levels(MathAchieve$Sex), 
+#' Sector = levels(MathAchieve$Sector))
+#' pred
+#' w <- wald(fit, getX(fit,data=pred)) # attaches data to wald.object 
+#'                                     # so it can be included in data frame
+#' w <- wald(fit, pred = pred)
+#' w <- as.data.frame(w)
+#' head(w)
+#' if(require("latticeExtra")){
+#'      xyplot(coef ~ SES | Sector, w, groups = Sex,
+#'             auto.key = TRUE, type = 'l',
+#'             fit = w$coef,
+#'             upper = with(w,coef+2*se),
+#'             lower = with(w,coef-2*se),
+#'             subscript = TRUE) +
+#'          glayer(panel.fit(...))
+#' }
+#' 
+#' wald( fit, 'Sex')  # sig. overall effect of Sex
+#' wald( fit, ':Sex') # but no evidence of interaction with ses
+#' wald( fit, '\\^2') # nor of curvature
+#' 
+#' # but we continue for the sake of illustration
+#' 
+#' L <- Lform( fit, list( 0, 1, 2*SES, 0, Sex == 'Male', (Sex == 'Male')*2*SES), MathAchieve)
+#' head(L)
+#' (ww <- wald ( fit, L ))
+#' wald.dd <- as.data.frame(ww, se = 2)
+#' head( wald.dd )
+#' 
+#' if (require("lattice")){
+#'   xyplot(coef + U2 + L2 ~ SES | Sex, wald.dd,
+#'          main= 'Increase in predicted mathach per unit increase in ses')
+#' }
+#' }
+#' 
+#' 
+#' @export wald
 wald <- function(fit, Llist = "", clevel = 0.95,
                  pred = NULL,
                  data = NULL, debug = FALSE , maxrows = 25,
@@ -253,6 +385,9 @@ if(FALSE){
 }
 
 
+##' @rdname wald
+##' @method print wald
+##' @export
 print.wald <- function(x, round = 6,...) {
   pround <- round - 1
   pformat <- function(x, digits = pround) {
@@ -342,6 +477,82 @@ coef.wald <- function( obj , se = FALSE ) {
 ##
 
 
+
+
+#' Get Information on Fixed Effects From a Model Object
+#' 
+#' \code{getFix} extracts coefficients, their covariance matrix, and degrees of
+#' freedom from a model object. Its main purpose is to extract information
+#' needed by the \code{wald} function. To extend the \code{wald} function to a
+#' new class of model objects, it is merely necessary to write a method for
+#' \code{getFix}.
+#' 
+#' Extending the \code{\link{wald}} function to a new class of objects only
+#' requires a \code{getFix} method for the new class.
+#' 
+#' @aliases getFix getFix.multinom getFix.lm getFix.glm getFix.lme getFix.gls
+#' getFix.merMod getFix.zeroinfl getFix.mipo getFix.MCMCglmm getFix.stanfit
+#' getFix.default
+#' @param fit A fitted model object
+#' @param pars For the \code{stanfit} method; see \code{\link[rstan]{extract}}.
+#' @param include For the \code{stanfit} method; see
+#' \code{\link[rstan]{extract}}.
+#' @param \dots Other arguments 
+#' @return Returns a list with the following components: \itemize{
+#' \item\code{fixed} fixed effect parameter estimates \item\code{vcov}
+#' covariance matrix of the parameters \item\code{df} denominator degrees of
+#' freedom for each effect }
+#' @section Methods (by class): \itemize{ \item \code{multinom}: method for
+#' \code{\link[nnet]{multinom}} objects in package \pkg{nnet}
+#' 
+#' \item \code{lm}: method for \code{\link{lm}} objects
+#' 
+#' \item \code{glm}: method for \code{\link{glm}} objects
+#' 
+#' \item \code{lme}: method for \code{\link[nlme]{lme}} objects in the
+#' \pkg{nlme} package
+#' 
+#' \item \code{gls}: method for \code{\link[nlme]{gls}} objects in the
+#' \pkg{nlme} package
+#' 
+#' \item \code{merMod}: method for \code{\link[lme4]{merMod}} objects in the
+#' \pkg{lme4} package
+#' 
+#' \item \code{zeroinfl}: method for \code{\link[pscl]{zeroinfl}} objects in
+#' the \pkg{pscl} package
+#' 
+#' \item \code{mipo}: method for \code{\link[mice]{mipo}} objects in the
+#' \pkg{mice} package
+#' 
+#' \item \code{MCMCglmm}: method for \code{\link[MCMCglmm]{MCMCglmm}} objects
+#' in the \pkg{MCMCglmm} package
+#' 
+#' \item \code{stanfit}: method for \code{\link[rstan]{stanfit}} objects in the
+#' \pkg{rstan} package
+#' 
+#' \item \code{default}: prints an error message if \code{getFix} is used for a
+#' class for which a method has not been written }
+#' @author Georges Monette
+#' @seealso \code{\link{wald}}
+#' @examples
+#' 
+#' if (require("car")){
+#' mod.prestige <- lm(prestige ~ education + income, data=Prestige)
+#' getFix(mod.prestige)
+#' }
+#' 
+#' \dontrun{
+#' # Example of a getFix method for a glm object:
+#' 
+#' print(gspline:::getFix.glm)
+#' 
+#' # Example of a getFix method for a mipo object in the mice package:
+#' 
+#' print(gspline:::getFix.mipo)
+#' }
+#' 
+#' 
+#' @export getFix
 getFix <- function(fit,...) UseMethod("getFix")
 
 getFix.multinom <- function(fit,...) {
@@ -455,6 +666,9 @@ getFix.MCMCglmm <- function(fit,...) {
   ret
 }
 
+##' @rdname getFix
+##' @method getFix stanfit
+##' @export
 getFix.stanfit <- function(fit, pars, include = TRUE, ...) {
   if(missing(pars)) pars <- dimnames(fit)$parameter
   sam <- as.matrix(fit, pars = pars , include = include)
@@ -602,6 +816,26 @@ Lmat <- function(fit, pattern, fixed = FALSE, invert = FALSE, debug = FALSE) {
 }
 
 
+
+
+#' Model Matrix for a Fit, Possibly on a New Data Frame
+#' 
+#' This function returns the X matrix for a fit, possibly based on a different
+#' data frame than the model. It performs a function very close to that of
+#' \code{\link{model.matrix}} except that \code{model.matrix} expects the
+#' variable for the LHS of the formula to be in the data set, ostensibly in
+#' order to remove rows for which the LHS variable(s) are NA. In addition,
+#' \code{getX} attaches the argument data set as an attribute.
+#' 
+#' Extending \code{getX} to new classes merely requires a \code{\link{getData}}
+#' method. The \code{\link{formula}} method is also used but usually already
+#' exists.
+#' 
+#' @param fit a fitted object with formula method
+#' @param data (default NULL) a data frame on which to evaluate the model
+#' matrix
+#' @return a design matrix
+#' @export getX
 getX <- function(fit, data = getData(fit)) {
   f <- formula(fit)
   if(length(f) == 3) f <- f[-2]
@@ -616,6 +850,9 @@ getX <- function(fit, data = getData(fit)) {
   ret
 }
 
+##' @rdname wald
+##' @method as.data.frame wald
+##' @export
 as.data.frame.wald <- function(x, row.names=NULL, optional, se = 2, digits = 3, sep = "", which = 1, ...) {
   # modified by GM 2010_09_20 to avoid problems with coefs with duplicate rownames
   dataf <- function(x, ...) {
@@ -645,6 +882,54 @@ as.data.frame.wald <- function(x, row.names=NULL, optional, se = 2, digits = 3, 
   ret
 }
 
+
+
+#' Hypothesis matrix generated by expressions
+#' 
+#' Creates an L matrix using expressions evaluated in \code{data} for each
+#' column of the L matrix
+#' 
+#' If \code{Lform} is called with only a \code{fit} argument, it outputs code
+#' consisting of an expression that would, if used as the \code{form} argument
+#' to \code{Lform} would generate the full model matrix for the linear model.
+#' 
+#' If \code{Lform} is called with two or three arguments, it generates a
+#' hypothesis matrix by evaluating the expressions in \code{form} in the
+#' environment \code{data}. The function \code{M} is designed to facilitate the
+#' generation of blocks of the hypothesis matrix corresponding to main effects
+#' or interaction effects of factors.
+#' 
+#' @param fit a fitted model with a \code{\link{getFix}} method.
+#' @param form formulas (expressions) to evaluate (see \emph{Details}).
+#' @param data the data frame in which expressions are evaluated.
+#' @return hypothesis matrix
+#' @seealso \code{\link{wald}}
+#' @examples
+#' 
+#' if (require("car")){
+#' mod <- lm( income ~ (education + I(education^2) )* type, Prestige)
+#' summary(mod)
+#' 
+#' # estimate the marginal value of an extra year of education for a
+#' # range of years for each type
+#' 
+#' years.type <- expand.grid( education = seq(6,18,2), type = levels(Prestige$type))
+#' Lf <- Lform( mod,
+#'    list( 0, 1, 2*education, 0, 0, type =="prof", type =="wc",
+#'       2*education*(type =="prof"), 2*education*(type =="wc")),
+#'    years.type)
+#' Lf
+#' ww <- wald( mod, Lf)
+#' ww
+#' ytderiv <- as.data.frame( ww, se = 2)
+#' head( ytderiv )
+#' if (require("lattice")){
+#'    xyplot(coef ~ education, ytderiv, groups = type, type = 'l',
+#'            auto.key = list(columns = 3, lines = TRUE, points = FALSE))
+#'    }
+#' }
+#' 
+#' @export Lform
 Lform <- function( fit, form, data = getData(fit)) {
   # 2011-12-01: replaced with version below
   # 2012 12 04
