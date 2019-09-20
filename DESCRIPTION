@@ -1,0 +1,18 @@
+Package: gspline
+Type: Package
+Title: Generalized Regression Splines
+Version: 0.5-0
+Date: 2019-09-20
+Authors@R: c(person("Georges", "Monette", role = c("aut", "cre"), email = "random@yorku.ca"),
+             person("John", "Fox", role = "aut", email = "jfox@mcmaster.ca"))
+Description: Functions for creating and manipulating generalized parametric regression
+  splines, including hypothesis testing.
+Depends: R (>= 3.5.0)
+Imports: stats, lme4, nlme, methods, lattice, latticeExtra
+Suggests: knitr, rmarkdown, car
+License: GPL (>= 2)
+LazyLoad: yes
+LazyData: yes
+Encoding: UTF-8
+VignetteBuilder: knitr, rmarkdown
+NeedsCompilation: no

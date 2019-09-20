@@ -1,0 +1,27 @@
+# last modified 2019-09-20
+
+importFrom("stats", "knots", "cov2cor", "asOneSidedFormula", "model.frame", "var", 
+           "coef", "vcov", "na.omit", "formula", "quantile", "pf", "pt", "qt",
+           "model.matrix")
+importFrom("methods", "slot")
+importFrom("latticeExtra", "layer", "glayer")
+importFrom("lattice", "panel.lines", "panel.polygon")
+
+export("gspline", "wald", "getFix", "getX", "Lform", "panel.fit", "gspline2")
+
+S3method("print", "gspline")
+S3method("print", "gspline_matrix")
+S3method("knots", "gspline")
+S3method("getFix", "multinom")
+S3method("getFix", "lm")
+S3method("getFix", "glm")
+S3method("getFix", "lme")
+S3method("getFix", "gls")
+S3method("getFix", "merMod")
+S3method("getFix", "zeroinfl")
+S3method("getFix", "mipo")
+S3method("getFix", "MCMCglmm")
+S3method("getFix", "stanfit")
+S3method("getFix", "default")
+S3method("as.data.frame", "wald")
+S3method("print", "wald")
