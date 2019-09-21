@@ -1,3 +1,3 @@
 # gspline
 
-Generlized Parametric Regression Splines
+Generalized Parametric Regression Splines
