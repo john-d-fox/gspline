@@ -20,7 +20,7 @@
 #'  plot(unemployment ~ date, type="l", lwd=2, data=Unemployment)
 #' 
 #' 
-#' @importFrom stats knots cov2cor asOneSidedFormula model.frame var coef vcov na.omit formula quantile pf pt qt model.matrix
+#' @importFrom stats knots cov2cor asOneSidedFormula model.frame var coef vcov na.omit formula quantile pf pt qt model.matrix lm.fit update
 #' @importFrom methods slot
 #' @importFrom latticeExtra layer glayer
 #' @importFrom lattice panel.lines panel.polygon

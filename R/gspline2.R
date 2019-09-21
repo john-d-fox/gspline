@@ -1,21 +1,6 @@
 ortho <- function(X){
-	# J <- ncol(X)
-	# I <- T <- diag(J)
-	# for (j in 2:J){
-	# 	X[, j] <- residuals(m <- lm.fit(as.matrix(X[, 1:(j - 1)]), X[, j]))
-	# 	TT <- I
-	# 	TT[, j] <- c(-coef(m), 1, rep(0, (J - j)))
-	# 	T <- T %*% TT
-	# }
-	# N <- diag(1/sqrt(colSums(X^2)))
-	# T <- T %*% N
-	# # X <- X %*% N
-	# # list(Xt=X, T=T)
-	# T
 	solve(qr.R(qr(X)))
 }
-
-
 
 #' General Parametric Regression Splines With Variable Degrees and Smoothness
 #' 
@@ -320,17 +305,19 @@ gspline2 <- function(x,
 	
 	if (!missing(x) && missing(knots)) knots <- quantile(x, 1:3/4)
 	
-	f <- if (missing(x)) {
-		function(x) x
-	} else {
-		range <- range(x)
-		if (periodic) function (x) (x - range[1])/(range[2] - range[1])
-		else function(x) 2*(x - mean(range))/(range[2] - range[1])
-	}
+#	f <- function (x) x
+	
+	# f <- if (missing(x) || !orthonormalize) {
+	# 	function(x) x
+	# } else {
+	# 	range <- range(x)
+	# 	if (periodic) function (x) (x - range[1])/(range[2] - range[1])
+	# 	else function(x) 2*(x - mean(range))/(range[2] - range[1])
+	# }
 	
 	untransformed.knots <- knots  ## FIXME: to create correct knot names
 	
-	knots <- f(knots) # adjust knots
+#	knots <- f(knots) # adjust knots
     
     basis  <- function(X, tol = 1e-9) {
         # returns linear independent columns
@@ -641,7 +628,7 @@ gspline2 <- function(x,
     #
     
     fun <- function(x, D = NULL, limit = 1) {
-    	x <- f(x)
+#    	x <- f(x)
         if(is.null(D)) {
             ret <- Xf(x, knots, max_degree, periodic = periodic) %*% G # model matrix
         } else {
@@ -755,6 +742,12 @@ print.gspline_matrix <- function(x, ...) {
 knots.gspline <- function(Fn, ...) {
     environment(Fn)$knots
 }
+
+# rescale <- function(x, periodic=FALSE){
+# 	range <- range(x)
+# 	if (periodic) function (x) (x - range[1])/(range[2] - range[1])
+# 	else function(x) 2*(x - mean(range))/(range[2] - range[1])
+# }
 
 # if(FALSE) {
 # # testing code
