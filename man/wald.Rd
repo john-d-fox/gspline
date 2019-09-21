@@ -119,7 +119,7 @@ estimated coefficient.
 \examples{
 
 
-if (require(nlme)){
+if (FALSE && require(nlme)){
 ###
 ### Using wald to create and plot a data frame with predicted values
 ###

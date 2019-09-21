@@ -130,7 +130,7 @@
 #' @examples
 #' 
 #' 
-#' if (require(nlme)){
+#' if (FALSE && require(nlme)){
 #' ###
 #' ### Using wald to create and plot a data frame with predicted values
 #' ###
@@ -181,6 +181,16 @@ wald <- function(fit, Llist = "", clevel = 0.95,
                  full = FALSE, fixed = FALSE,
                  invert = FALSE, method = 'svd',
                  df = NULL, pars = NULL,...) {
+  
+  L2ortho <- function(L){
+    fitted_mm <- model.matrix(fit)	
+    raw_mm <- model.matrix(update(fit, data=getModelData(fit)))
+    G <- lm.fit(raw_mm, fitted_mm)$coefficients
+    if (isTRUE(all.equal(G, diag(ncol(G)), check.attributes=FALSE))) return(L)
+    ret <- L %*% G
+    attr(ret, 'G') <- G
+    ret
+  }
   
   inwald(TRUE)
   on.exit(inwald(FALSE))
@@ -256,6 +266,9 @@ wald <- function(fit, Llist = "", clevel = 0.95,
     narows <- apply(Lna,1, function(x) sum(abs(x))) > 0
     
     L <- L[, !is.na(beta),drop = FALSE]
+    
+    L <- L2ortho(L) #CHECKME: Should this go before previous line (probably not)?
+    
     ## restore the data attribute
     attr(L,'data') <- Ldata
     beta <- beta[ !is.na(beta) ]

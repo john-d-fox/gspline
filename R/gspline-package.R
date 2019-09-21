@@ -20,8 +20,21 @@
 #'  plot(unemployment ~ date, type="l", lwd=2, data=Unemployment)
 #' 
 #' 
-#' @importFrom stats knots cov2cor asOneSidedFormula model.frame var coef vcov na.omit formula quantile pf pt qt model.matrix lm.fit update
+#' @importFrom stats knots cov2cor asOneSidedFormula model.frame var coef vcov na.omit formula quantile pf pt qt model.matrix lm.fit update expand.model.frame
 #' @importFrom methods slot
 #' @importFrom latticeExtra layer glayer
 #' @importFrom lattice panel.lines panel.polygon
 NULL
+
+getModelData <- function(model){
+  data <- model.frame(model)
+  vars <- all.vars(formula(model))
+  cols <- colnames(data)
+  check <- vars %in% cols
+  if (!(all(check))){
+    missing.cols <- !check
+    data <- expand.model.frame(model, vars[missing.cols])
+    data <- data[, vars]
+  }
+  data
+}
