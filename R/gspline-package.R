@@ -27,14 +27,23 @@
 NULL
 
 getModelData <- function(model){
-  data <- model.frame(model)
+  data1 <- data <- model.frame(model)
   vars <- all.vars(formula(model))
+  if ("pi" %in% vars){
+    vars <- setdiff(vars, "pi")
+    message("the symbol 'pi' is treated as a numeric constant in the model formula")
+  }
   cols <- colnames(data)
   check <- vars %in% cols
   if (!(all(check))){
     missing.cols <- !check
-    data <- expand.model.frame(model, vars[missing.cols])
-    data <- data[, vars]
+    data1 <- expand.model.frame(model, vars[missing.cols])
   }
-  data
+  missing.cols <- !cols %in% colnames(data1)
+  if (any(missing.cols)){
+    data1 <- cbind(data1, data[missing.cols])
+  }
+  cols <- colnames(data1)
+  valid <- make.names(cols) == cols | grepl("^\\(.*\\)$", cols)
+  data1[valid]
 }

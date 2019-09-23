@@ -130,7 +130,7 @@
 #' @examples
 #' 
 #' 
-#' if (FALSE && require(nlme)){
+#' if (require(nlme)){
 #' ###
 #' ### Using wald to create and plot a data frame with predicted values
 #' ###
@@ -1058,6 +1058,23 @@ inwald <- function(set) {
 
 inwald(FALSE)
 
+##' @method model.frame lme
+##' @export
+model.frame.lme <- function(formula, ...){
+  data <- as.data.frame(formula$data)
+  if (is.null(data)) stop("lme() must be called with the 'data' argument specified")
+  data
+}
+
+##' @method model.matrix lme
+##' @export
+model.matrix.lme <- function(object, ...){
+  data <- object$data
+  if (is.null(data)){
+    data <- environment(formula(object))
+  }
+  model.matrix(formula(object), data=data)
+}
 
 # test <- function(X, gsp){
 #   assign("is.wald", TRUE, envir=gsplineEnv)
