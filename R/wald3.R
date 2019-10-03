@@ -1,5 +1,5 @@
 # moved here 2019-05-23 by J. Fox
-# wald3: experimental function: 2019_09_25 by G. Monette
+# wald: experimental function: 2019_09_25 by G. Monette
 
 
 ## wald.R
@@ -177,40 +177,14 @@
 #' 
 #' 
 #' @export
-wald3 <- function(fit, Llist = "", clevel = 0.95,
+wald <- function(fit, Llist = "", clevel = 0.95,
                  pred = NULL,
                  data = NULL, debug = FALSE , maxrows = 25,
                  full = FALSE, fixed = FALSE,
                  invert = FALSE, method = 'svd', 
-                 df = NULL, pars = NULL,...) {
+                 df = NULL, pars = NULL, tol.df = 1e-6, tol.qr = 1e-10, ...) {
   
-  L2ortho <- function(L){  # no longer used 2019_09_26,GM
-    if(debug) disp('In L2ortho')
-    if(debug) disp(L)
-    fitted_mm <- model.matrix(fit)	
-    if(debug) disp(fitted_mm)
-    raw_mm <- model.matrix(update(fit, data=getModelData(fit)))
-    if(debug) disp(raw_mm)
-    G <- lm.fit(raw_mm, fitted_mm)$coefficients
-    if(debug) disp(zapsmall(G))
-    if (isTRUE(all.equal(G, diag(ncol(G)), check.attributes=FALSE))) return(L)
-    ret <- L %*% G
-    if (isTRUE(all.equal(L, diag(ncol(L)), check.attributes=FALSE))) {
-      rownames(ret) <- colnames(raw_mm)
-    } 
-    attr(ret, 'G') <- G
-    if(debug) disp(zapsmall(ret))
-    ret
-  }
-  # 2019_09_26 comment by GM:
-  #
-  # We need to get the names of the raw coefficients before 
-  # generating the L matrix if it's generated internally 
-  # using regular expressions or row indices.
-  # 
-  # To avoid calling 'update' twice, this calls Lortho to get
-  # the G matrix and the names of the raw coefficients
-  
+
   inwald(TRUE)
   on.exit(inwald(FALSE))
   
@@ -236,10 +210,10 @@ wald3 <- function(fit, Llist = "", clevel = 0.95,
     as.data.frame(x, ...)
   }
   unique.rownames <- function(x) {
-    ret <- c(tapply(1:length(x), x, function(xx) {
+    ret <- c(tapply(seq_along(x), x, function(xx) {
       if(length(xx) == 1) ""
-      else 1:length(xx)
-    })) [tapply(1:length(x), x)]
+      else seq_along(xx)
+    })) [tapply(seq_along(x), x)]
     ret <- paste(x, ret, sep="")
     ret
   }
@@ -260,7 +234,7 @@ wald3 <- function(fit, Llist = "", clevel = 0.95,
   if(!is.list(Llist)) Llist <- list(Llist)
   
   ret <- list()
-  for (ii in 1:length(Llist)) {
+  for (ii in seq_along(Llist)) {
     ret[[ii]] <- list()
     Larg <- Llist[[ii]]
     # Create hypothesis matrix: L
@@ -291,7 +265,7 @@ wald3 <- function(fit, Llist = "", clevel = 0.95,
     
     ## identify rows of L that are not estimable because they depend on betas that are NA
     Lna <- L[, is.na(beta), drop = FALSE]
-    narows <- apply(Lna,1, function(x) sum(abs(x))) > 0
+    narows <- apply(Lna, 1, function(x) sum(abs(x))) > 0
     
     L <- L[, !is.na(beta),drop = FALSE]
     if(debug) disp(L)
@@ -310,22 +284,16 @@ wald3 <- function(fit, Llist = "", clevel = 0.95,
     ## Anova
     if( method == 'qr' ) {
       qqr <- qr(t(na.omit(L)))
-      # Qqr <- Q(t(L))
       L.rank <- qqr$rank
-      # L.rank <- attr(Qqr,'rank')
-      # L.miss <- attr(Qqr,'miss')
-      if(debug)disp( t( qr.Q(qqr)))
-      L.full <- t(qr.Q(qqr))[ 1:L.rank,,drop=FALSE]
-      #L.full <- t(Qqr[!L.miss,])[ 1:L.rank,,drop=F]
+      if(debug) disp( t( qr.Q(qqr)))
+      L.full <- t(qr.Q(qqr))[ seq_len(L.rank),,drop=FALSE]
     } else if ( method == 'svd' ) {
       if(debug) disp(L)
-      #              if(debug)disp( t(na.omit(t(L))))
-      #              sv <- svd( t(na.omit(t(L))) , nu = 0 )
       sv <- svd( na.omit(L) , nu = 0 )
       
-      if(debug)disp( sv )
+      if(debug) disp( sv )
       tol.fac <- max( dim(L) ) * max( sv$d )
-      if(debug)disp( tol.fac )
+      if(debug) disp( tol.fac )
       if ( tol.fac > 1e6 ) warning( "Poorly conditioned L matrix, calculated numDF may be incorrect")
       tol <- tol.fac * .Machine$double.eps
       if(debug)disp( tol )
@@ -350,7 +318,7 @@ wald3 <- function(fit, Llist = "", clevel = 0.95,
     
     vv <-  L.full %*% vc %*% t(L.full)
     eta.hat <- L.full %*% beta
-    Fstat <- (t(eta.hat) %*% qr.solve(vv,eta.hat,tol=1e-10)) / L.rank
+    Fstat <- (t(eta.hat) %*% qr.solve(vv,eta.hat,tol=tol.qr)) / L.rank
     included.effects <- apply(L,2,function(x) sum(abs(x),na.rm=TRUE)) != 0
     denDF <- min( dfs[included.effects])
     numDF <- L.rank
@@ -383,13 +351,8 @@ wald3 <- function(fit, Llist = "", clevel = 0.95,
     colnames(aod)[ncol(aod)] <- 'p-value'
     if (debug ) disp(aod)
     if ( !is.null(clevel) ) {
-      #print(aod)
-      #print(aod[,'DF'])
-      #print(aod[,'etasd'])
       hw <- qt(1 - (1-clevel)/2, aod[,'DF']) * aod[,'Std.Error']
-      #print(hw)
       aod <- cbind( aod, LL = aod[,"Estimate"] - hw, UL = aod[,"Estimate"] + hw)
-      #print(aod)
       if (debug ) disp(colnames(aod))
       labs <- paste(c("Lower","Upper"), format(clevel))
       colnames(aod) [ ncol(aod) + c(-1,0)] <- labs
@@ -398,10 +361,6 @@ wald3 <- function(fit, Llist = "", clevel = 0.95,
     aod <- as.dataf(aod)
     
     rownames(aod) <- rownames(as.dataf(L))
-    # 
-    # GM 2019_02_21: remove dependency on labs function in spida2
-    #
-    # labs(aod) <- names(dimnames(L))[1]
     ret[[ii]]$estimate <- aod
     ret[[ii]]$coef <- c(etahat)
     ret[[ii]]$vcov <- etavar
@@ -446,7 +405,7 @@ print.wald <- function(x, round = 6,...) {
     if (is.numeric(x)) x <- round(x,digits=digits)
     format(x)
   }
-  for( ii in 1:length(x)) {
+  for( ii in seq_along(x)) {
     nn <- names(x)[ii]
     tt <- x[[ii]]
     ta <- tt$anova
@@ -458,7 +417,7 @@ print.wald <- function(x, round = 6,...) {
     
     te[,'p-value'] <- pformat( te[,'p-value'])
     if ( !is.null(round)) {
-      for ( ii in 1:length(te)) {
+      for ( ii in seq_along(te)) {
         te[[ii]] <- rnd(te[[ii]],digits=round)
       }
     }
@@ -471,23 +430,6 @@ print.wald <- function(x, round = 6,...) {
   }
   invisible(x)
 }
-
-# walddf <- function(fit, Llist = "", clevel = 0.95,
-#                    data = NULL, debug = FALSE ,
-#                    full = FALSE, fixed = FALSE,
-#                    invert = FALSE, method = 'svd',
-#                    df = NULL,
-#                    se = 2, digits = 3, sep = '') {
-#     obj <- wald(fit = fit, Llist = Llist, clevel = clevel,
-#                 data = data, debug = debug ,
-#                 full = FALSE, fixed = FALSE,
-#                 invert = FALSE, method = 'svd',
-#                 df = NULL)
-#     ret <- as.data.frame.wald(obj,
-#                               se = se, digits = digits,
-#                               sep = sep)
-#     ret
-# }
 
 coef.wald <- function( obj , se = FALSE ) {
   if ( length(obj) == 1) {
@@ -666,35 +608,9 @@ getFix.gls <- function(fit,...) {
 }
 
 ##' @rdname getFix
-##' @method getFix lmer
-##' @export
-getFix.lmer <- function(fit,...) {
-  # 2014 06 04: changed fit@fixef to fixef(fit)
-  ret <- list()
-  ret$fixed <- lme4::fixef(fit)
-  ret$vcov <- as.matrix( vcov(fit) )
-  # ret$df <- Matrix:::getFixDF(fit)
-  ret$df <- rep( Inf, length(ret$fixed))
-  ret
-}
-
-# getFix.glmer <- function(fit,...) {
-#     # 2014 06 04: changed fit@fixef to fixef(fit)
-#     
-#     ret <- list()
-#     ret$fixed <- lme4::fixef(fit)
-#     ret$vcov <- as.matrix(vcov(fit))
-#     # ret$df <- Matrix:::getFixDF(fit)
-#     ret$df <- rep( Inf, length(ret$fixed))
-#     ret
-# }
-
-##' @rdname getFix
 ##' @method getFix merMod
 ##' @export
 getFix.merMod <- function(fit,...) {
-  # 2014 06 04: changed fit@fixef to fixef(fit)
-  
   ret <- list()
   ret$fixed <- lme4::fixef(fit)
   ret$vcov <- as.matrix(vcov(fit))
@@ -846,7 +762,7 @@ Lmat <- function(fit, pattern, fixed = FALSE, invert = FALSE, debug = FALSE) {
   # or a list with each component generating  a row of the matrix
   umatch <- function( pat, x, fixed , invert ) {
     ret <- rep(0,length(pat))
-    for ( ii in 1:length(pat)) {
+    for ( ii in seq_along(pat)) {
       imatch <- grep(pat[ii], x, fixed= fixed, invert = invert)
       if ( length(imatch) != 1) {
         cat("\nBad match of:\n")
@@ -879,7 +795,7 @@ Lmat <- function(fit, pattern, fixed = FALSE, invert = FALSE, debug = FALSE) {
   } else if (is.list(pattern)){
     ret <- matrix(0, nrow = length(pattern), ncol = length(fe))
     colnames(ret) <- ne
-    for ( ii in 1:length(pattern)) {
+    for ( ii in seq_along(pattern)) {
       Lcoefs <- pattern[[ii]]
       pos <- umatch(names(Lcoefs), ne, fixed = fixed, invert = invert)
       if ( any( is.na(pos))) stop("Names of L coefs not matched in fixed effects")
@@ -1056,18 +972,10 @@ Lcall <- function( fit , factors = getFactorNames(fit), debug = F){ # not curren
     if(debug) disp(ff.rep)
     nams <- gsub( ff.string, ff.rep, nams)
   }
-  # for ( ii in seq_along(matrix)) {
-  #     mm.all   <- paste( "(:",names(matrix)[ii], "[^\\)]*\\))",sep='')
-  #     mm.match <- paste( "(",names(matrix)[ii], "[^\\)]*\\))",matrix[ii], sep ='')
-  #     mm.rep   <- paste( "\\1")
-  #     which.null <- grepl( mm.all, nams) mm.null  <-
-  #
-  # }
   nams <- sub("(Intercept)", 1, nams)
   nams <- gsub( "^:","(",nams)
   nams <- gsub( ":$",")",nams)
   nams <- gsub( ":", ") * (", nams)
-  #if(comment) nams <- paste( nams, "  #",nams)
   nams <- paste( "with (data, \n cbind(", paste( nams, collapse = ",\n"), ")\n)\n", collapse = "")
   class(nams) <- 'cat'
   nams
@@ -1110,9 +1018,3 @@ model.matrix.lme <- function(object, ...){
   }
   model.matrix(formula(object), data=data)
 }
-
-# test <- function(X, gsp){
-#   assign("is.wald", TRUE, envir=gsplineEnv)
-#   on.exit(assign("is.wald", FALSE, envir=gsplineEnv))
-#   gsp(X)
-# }

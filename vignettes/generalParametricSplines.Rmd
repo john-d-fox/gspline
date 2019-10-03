@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE, comment='', message = FALSE)
 library(gspline)
 library(latticeExtra)
 
-sp <- gspline(1)
+sp <- gspline(knots=1)
 Dmat <- environment(sp)$Dmat
 Emat <- environment(sp)$Emat
 basis <- environment(sp)$basis
@@ -435,7 +435,7 @@ We add a periodic spline component as a function of months
 using a cubic spline with period 12 and four internal knot at
 $12 \times (1/5 2/5 3/5 4/5)$. 
 ```{r}
-per3 <- gspline(12 * 1:5/5, 3, 2, periodic = TRUE)
+per3 <- gspline(knots = 12 * 1:5/5, degree=3, smoothness=2, periodic = TRUE)
 fitper3 <-  lm(unemployment ~ sp3d(year) + per3(month), unemp)
 summary(fitper3)
 unemp$fitper3 <- predict(fitper3)
