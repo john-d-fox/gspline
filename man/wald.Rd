@@ -127,10 +127,10 @@ if (require(nlme)){
 MathAchieve$Sector <- MathAchSchool[as.character(MathAchieve$School), "Sector"]
 fit <- lme(MathAch ~ (SES+I(SES^2)) * Sex * Sector, MathAchieve, random = ~ 1|School)
 summary(fit)
-pred <- expand.grid( SES = seq(-2,2,.1), Sex = levels(MathAchieve$Sex), 
+pred <- expand.grid( SES = seq(-2,2,.1), Sex = levels(MathAchieve$Sex),
 Sector = levels(MathAchieve$Sector))
 pred
-w <- wald(fit, getX(fit,data=pred)) # attaches data to wald.object 
+w <- wald(fit, getX(fit,data=pred)) # attaches data to wald.object
                                     # so it can be included in data frame
 w <- wald(fit, pred = pred)
 w <- as.data.frame(w)

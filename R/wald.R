@@ -193,21 +193,6 @@ wald <- function(fit,
                  tol.df = 1e-6,
                  tol.qr = 1e-10,
                  ...) {
-  inwald(TRUE)
-  on.exit(inwald(FALSE))
-  
-  fitted_mm <- model.matrix(fit)
-  fit_raw <- update(fit, data = getModelData(fit))
-  coef_names_raw <-
-    names(coef(fit_raw)) # need this for the Lmat function
-  raw_mm <- model.matrix(fit_raw)
-  G <- lm.fit(raw_mm, fitted_mm)$coefficients
-  
-  # New version with support for stanfit
-  if (full)
-    return(wald(fit, getX(fit)))
-  if (!is.null(pred))
-    return(wald(fit, getX(fit, pred)))
   dataf <- function(x, ...) {
     x <- cbind(x)
     rn <- rownames(x)
@@ -215,6 +200,7 @@ wald <- function(fit,
       rownames(x) <- NULL
     data.frame(x, ...)
   }
+  
   as.dataf <- function(x, ...) {
     x <- cbind(x)
     rn <- rownames(x)
@@ -222,6 +208,7 @@ wald <- function(fit,
       rownames(x) <- NULL
     as.data.frame(x, ...)
   }
+  
   unique.rownames <- function(x) {
     ret <- c(tapply(seq_along(x), x, function(xx) {
       if (length(xx) == 1)
@@ -232,6 +219,22 @@ wald <- function(fit,
     ret <- paste(x, ret, sep = "")
     ret
   }
+  
+  inwald(TRUE)
+  on.exit(inwald(FALSE))
+  
+  fitted_mm <- model.matrix(fit)
+  fit_raw <- update(fit, data = getModelData(fit))
+  coef_names_raw <-
+    names(coef(fit_raw)) # need this for the Lmat function
+  raw_mm <- model.matrix(fit_raw)
+  G <- lm.fit(raw_mm, fitted_mm)$coefficients
+  
+  if (full)
+    return(wald(fit, getX(fit)))
+  if (!is.null(pred))
+    return(wald(fit, getX(fit, pred)))
+  
   if (inherits(fit, 'stanfit')) {
     fix <- if (is.null(pars))
       getFix(fit)
@@ -239,7 +242,7 @@ wald <- function(fit,
       getFix(fit, pars = pars, ...)
     if (!is.matrix(Llist))
       stop(paste(
-        'Sorry: wald needs Llist to be a n x',
+        'Llist must be an n x',
         length(fix$fixed),
         'matrix for this stanfit object'
       ))
@@ -259,7 +262,7 @@ wald <- function(fit,
   if (!is.list(Llist))
     Llist <- list(Llist)
   
-  ret <- list()
+  ret <- vector(length(Llist), mode = "list")
   for (ii in seq_along(Llist)) {
     ret[[ii]] <- list()
     Larg <- Llist[[ii]]
@@ -278,7 +281,7 @@ wald <- function(fit,
             disp(dim(Larg))
           if ((length(Larg) < length(beta)) &&
               (all(Larg > 0) || all(Larg < 0))) {
-            L <- diag(length(beta))[Larg, ]
+            L <- diag(length(beta))[Larg,]
             dimnames(L) <-
               list(names(coef(fit_raw))[Larg], names(beta))
           } else
@@ -288,10 +291,12 @@ wald <- function(fit,
           L <- Larg
       }
     }
+    
     if (debug) {
       disp(Larg)
       disp(L)
     }
+    
     # get data attribute, if any, in case it gets dropped
     Ldata <- attr(L , 'data')
     
@@ -301,17 +306,16 @@ wald <- function(fit,
       sum(abs(x))) > 0
     
     L <- L[,!is.na(beta), drop = FALSE]
+    
     if (debug)
       disp(L)
-    # Q: L <- L2ortho(L) #CHECKME: Should this go before previous line (probably not)?
-    # A: I think yes because L and G won't be configurable for multiplication
-    # after dropping columns but I don't know whether we'd get this far
-    # with a singular fit. We'd have to test singular fits. 2019_09_26 GM
     
     L <- L %*% G
     L <- L[,!is.na(beta), drop = FALSE]
+    
     if (debug)
       disp(L)
+    
     ## restore the data attribute
     attr(L, 'data') <- Ldata
     beta <- beta[!is.na(beta)]
@@ -320,24 +324,32 @@ wald <- function(fit,
     if (method == 'qr') {
       qqr <- qr(t(na.omit(L)))
       L.rank <- qqr$rank
+      
       if (debug)
         disp(t(qr.Q(qqr)))
+      
       L.full <- t(qr.Q(qqr))[seq_len(L.rank), , drop = FALSE]
     } else if (method == 'svd') {
       if (debug)
         disp(L)
+      
       sv <- svd(na.omit(L) , nu = 0)
       
       if (debug)
         disp(sv)
+      
       tol.fac <- max(dim(L)) * max(sv$d)
+      
       if (debug)
         disp(tol.fac)
+      
       if (tol.fac > 1e6)
         warning("Poorly conditioned L matrix, calculated numDF may be incorrect")
       tol <- tol.fac * .Machine$double.eps
+      
       if (debug)
         disp(tol)
+      
       L.rank <- sum(sv$d > tol)
       if (debug)
         disp(L.rank)
@@ -372,11 +384,12 @@ wald <- function(fit,
     denDF <- min(dfs[included.effects])
     numDF <- L.rank
     ret[[ii]]$anova <- list(
-      numDF = numDF,
-      denDF = denDF,
+      "numDF" = numDF,
+      "denDF" = denDF,
       "F-value" = Fstat,
       "p-value" = pf(Fstat, numDF, denDF, lower.tail = FALSE)
     )
+    
     ## Estimate
     
     etahat <- L %*% beta
@@ -397,9 +410,9 @@ wald <- function(fit,
         min(dfs[x != 0]), dfs = dfs)
     
     aod <- cbind(
-      Estimate = c(etahat),
-      Std.Error = etasd,
-      DF = denDF,
+      "Estimate" = c(etahat),
+      "Std.Error" = etasd,
+      "DF" = denDF,
       "t-value" = c(etahat / etasd),
       "p-value" = 2 * pt(abs(etahat / etasd), denDF, lower.tail = FALSE)
     )
@@ -434,28 +447,11 @@ wald <- function(fit,
       data.attr <- data
     ret[[ii]]$data <- data.attr
   }
+  
   names(ret) <- names(Llist)
   attr(ret, "class") <- "wald"
   ret
 }
-
-# Test
-if (FALSE) {
-  library(nlme)
-  fit <- lme(mathach ~ ses * Sex * Sector, hs, random = ~ 1 | school)
-  summary(fit)
-  pred <-
-    expand.grid(
-      ses = seq(-2, 2, 1),
-      Sex = levels(hs$Sex),
-      Sector = levels(hs$Sector)
-    )
-  pred
-  wald(fit, model.matrix(fit, data = pred))
-  model.matrix(fit, data = pred)
-  model.matrix( ~ ses * Sex * Sector, data = pred)
-}
-
 
 ##' @rdname wald
 ##' @method print wald
@@ -489,10 +485,7 @@ print.wald <- function(x, round = 6, ...) {
         te[[ii]] <- rnd(te[[ii]], digits = round)
       }
     }
-    #
-    # GM 2019_02_21: remove dependency on labs function in spida2
-    #
-    # labs(te) <- rowlab
+    
     print(te, digits = round, ...)
     cat("\n")
   }
@@ -501,11 +494,9 @@ print.wald <- function(x, round = 6, ...) {
 
 coef.wald <- function(obj , se = FALSE) {
   if (length(obj) == 1) {
-    ret <-
-      ret <- obj[[1]]$coef
-    if (is.logical(se) && (se == TRUE)) {
+    ret <- obj[[1]]$coef
+    if (isTRUE(se)) {
       ret <- cbind(coef = ret, se = obj[[1]]$se)
-      
     } else if (se > 0) {
       ret <- cbind(
         coef = ret,
@@ -523,10 +514,7 @@ coef.wald <- function(obj , se = FALSE) {
 ##
 ##
 ##   Functions to perform a GLH on lm, lme or lmer models
-##   August 13, 2005
-##
-##
-##
+
 ##   Lmat: generate a hypothesis matrix based on a pattern
 ##
 ##   glh
@@ -834,73 +822,63 @@ getFactorNames.default <-
   function(object, ...)
     getFactorNames(getData(object))
 
-
-
-print.cat <- function(object, ...) {
-  cat(object)
-  invisible(object)
+print.cat <- function(x, ...) {
+  cat(x)
+  invisible(x)
 }
 
-Lmat <-
-  function(fit,
-           pattern,
-           fixed = FALSE,
-           invert = FALSE,
-           debug = FALSE) {
-    # pattern can be a character used as a regular expression in grep
-    # or a list with each component generating  a row of the matrix
-    umatch <- function(pat, x, fixed , invert) {
-      ret <- rep(0, length(pat))
-      for (ii in seq_along(pat)) {
-        imatch <- grep(pat[ii], x, fixed = fixed, invert = invert)
-        if (length(imatch) != 1) {
-          cat("\nBad match of:\n")
-          print(pat)
-          cat("in:\n")
-          print(x)
-          stop("Bad match")
-        }
-        ret[ii] <- imatch
+Lmat <- function(fit,
+                 pattern,
+                 fixed = FALSE,
+                 invert = FALSE,
+                 debug = FALSE) {
+  # pattern can be a character used as a regular expression in grep
+  # or a list with each component generating  a row of the matrix
+  umatch <- function(pat, x, fixed , invert) {
+    ret <- rep(0, length(pat))
+    for (ii in seq_along(pat)) {
+      imatch <- grep(pat[ii], x, fixed = fixed, invert = invert)
+      if (length(imatch) != 1) {
+        cat("\nBad match of:\n")
+        print(pat)
+        cat("in:\n")
+        print(x)
+        stop("Bad match")
       }
-      ret
+      ret[ii] <- imatch
     }
-    if (is.character(fit)) {
-      x <- pattern
-      pattern <- fit
-      fit <- x
-    }
-    fe <- getFix(fit)$fixed
-    ## FIXTHIS ----
-    ne <- names(fe)
-    if (is.character(pattern)) {
-      L.indices <- grep(pattern, names(fe), fixed = fixed, invert = invert)
-      ret <- diag(length(fe)) [L.indices, , drop = FALSE]
-      if (debug)
-        disp(ret)
-      rownames(ret) <- names(fe) [L.indices]
-      #
-      # GM 2019_02_21: remove dependency on labs function in spida2
-      #
-      #  labs(ret) <- "Coefficients"
-    } else if (is.list(pattern)) {
-      ret <- matrix(0, nrow = length(pattern), ncol = length(fe))
-      colnames(ret) <- ne
-      for (ii in seq_along(pattern)) {
-        Lcoefs <- pattern[[ii]]
-        pos <-
-          umatch(names(Lcoefs), ne, fixed = fixed, invert = invert)
-        if (any(is.na(pos)))
-          stop("Names of L coefs not matched in fixed effects")
-        ret[ii, pos] <- Lcoefs
-      }
-      rownames(ret) <- names(pattern)
-    }
-    #
-    # GM 2019_02_21: remove dependency on labs function in spida2
-    #
-    #  labs(ret) <- "Coefficients"
     ret
   }
+  if (is.character(fit)) {
+    x <- pattern
+    pattern <- fit
+    fit <- x
+  }
+  fe <- getFix(fit)$fixed
+  ## FIXTHIS ----
+  ne <- names(fe)
+  if (is.character(pattern)) {
+    L.indices <-
+      grep(pattern, names(fe), fixed = fixed, invert = invert)
+    ret <- diag(length(fe)) [L.indices, , drop = FALSE]
+    if (debug)
+      disp(ret)
+    rownames(ret) <- names(fe) [L.indices]
+  } else if (is.list(pattern)) {
+    ret <- matrix(0, nrow = length(pattern), ncol = length(fe))
+    colnames(ret) <- ne
+    for (ii in seq_along(pattern)) {
+      Lcoefs <- pattern[[ii]]
+      pos <-
+        umatch(names(Lcoefs), ne, fixed = fixed, invert = invert)
+      if (any(is.na(pos)))
+        stop("Names of L coefs not matched in fixed effects")
+      ret[ii, pos] <- Lcoefs
+    }
+    rownames(ret) <- names(pattern)
+  }
+  ret
+}
 
 
 
@@ -941,49 +919,47 @@ getX <- function(fit, data = getData(fit)) {
 ##' @rdname wald
 ##' @method as.data.frame wald
 ##' @export
-as.data.frame.wald <-
-  function(x,
-           row.names = NULL,
-           optional,
-           se = 2,
-           digits = 3,
-           sep = "",
-           which = 1,
-           ...) {
-    # modified by GM 2010_09_20 to avoid problems with coefs with duplicate rownames
-    dataf <- function(x, ...) {
-      x <- cbind(x)
-      rn <- rownames(x)
-      if (length(unique(rn)) < length(rn))
-        rownames(x) <- NULL
-      data.frame(x, ...)
-    }
-    x = x[which]
-    ret <- if (length(x) == 1) {
-      # e.g. is length(which) > 1
-      cf <- x[[1]]$coef
-      ret <- data.frame(coef = cf, se = x[[1]]$se)
-      if (is.null(names(se)))
-        names(se) <-
-        sapply(se, function(x)
-          as.character(round(x, digits)))
-      SE <- x[[1]]$se
-      SEmat <- cbind(SE) %*% rbind(se)
-      cplus <- cf + SEmat
-      cminus <- cf - SEmat
-      colnames(cplus) <- paste("U", colnames(cplus), sep = sep)
-      colnames(cminus) <- paste("L", colnames(cminus), sep = sep)
-      ret <- cbind(ret, cplus, cminus)
-      if (!is.null(dd <- x[[1]]$data))
-        ret <- cbind(ret, dd)
-      if (!is.null(row.names))
-        row.names(ret) <- row.names
-      ret
-    }
-    else
-      lapply(x, as.data.frame.wald)
+as.data.frame.wald <- function(x,
+                               row.names = NULL,
+                               optional,
+                               se = 2,
+                               digits = 3,
+                               sep = "",
+                               which = 1,
+                               ...) {
+  dataf <- function(x, ...) {
+    x <- cbind(x)
+    rn <- rownames(x)
+    if (length(unique(rn)) < length(rn))
+      rownames(x) <- NULL
+    data.frame(x, ...)
+  }
+  x = x[which]
+  ret <- if (length(x) == 1) {
+    # e.g. is length(which) > 1
+    cf <- x[[1]]$coef
+    ret <- data.frame(coef = cf, se = x[[1]]$se)
+    if (is.null(names(se)))
+      names(se) <-
+      sapply(se, function(x)
+        as.character(round(x, digits)))
+    SE <- x[[1]]$se
+    SEmat <- cbind(SE) %*% rbind(se)
+    cplus <- cf + SEmat
+    cminus <- cf - SEmat
+    colnames(cplus) <- paste("U", colnames(cplus), sep = sep)
+    colnames(cminus) <- paste("L", colnames(cminus), sep = sep)
+    ret <- cbind(ret, cplus, cminus)
+    if (!is.null(dd <- x[[1]]$data))
+      ret <- cbind(ret, dd)
+    if (!is.null(row.names))
+      row.names(ret) <- row.names
     ret
   }
+  else
+    lapply(x, as.data.frame.wald)
+  ret
+}
 
 
 
@@ -1034,13 +1010,6 @@ as.data.frame.wald <-
 #'
 #' @export Lform
 Lform <- function(fit, form, data = getData(fit)) {
-  # 2011-12-01: replaced with version below
-  # 2012 12 04
-  # Plan for Lform
-  #
-  
-  # 2012 12 05: Lform becomes Lex to acknowledge the fact that it uses
-  # expressions instead of formulas
   if (missing(form))
     return (Lcall(fit))
   gg <- getFix(fit)
@@ -1057,9 +1026,7 @@ Lform <- function(fit, form, data = getData(fit)) {
   rownames(L) <- rownames(data)
   colnames(L) <- names(gg$fixed)
   Lpos <- Lsub[, colnames(Lsub) == '', drop = FALSE]
-  # disp(Lpos)
   Lnamed <- Lsub[, colnames(Lsub) != '', drop  = FALSE]
-  # disp(Lnamed)
   for (ip in seq_len(ncol(Lpos)))
     L[, ip] <- Lpos[, ip]
   if (ncol(Lnamed) > 0) {
@@ -1073,37 +1040,36 @@ Lform <- function(fit, form, data = getData(fit)) {
   L
 }
 
-Lcall <-
-  function(fit ,
-           factors = getFactorNames(fit),
-           debug = F) {
-    # not currently exported
-    
-    nams <- names(getFix(fit)$fixed)
-    
-    nams <- gsub("^", ":", nams)   # delineate terms
-    nams <- gsub("$", ":", nams)   # delineate terms
-    for (ff in factors)   {
-      ff.string <- paste(ff, "([^:]*)" , sep = '')
-      if (debug)
-        disp(ff.string)
-      ff.rep <- paste(ff, " == \\'\\1\\'", sep = '')
-      if (debug)
-        disp(ff.rep)
-      nams <- gsub(ff.string, ff.rep, nams)
-    }
-    nams <- sub("(Intercept)", 1, nams)
-    nams <- gsub("^:", "(", nams)
-    nams <- gsub(":$", ")", nams)
-    nams <- gsub(":", ") * (", nams)
-    nams <-
-      paste("with (data, \n cbind(",
-            paste(nams, collapse = ",\n"),
-            ")\n)\n",
-            collapse = "")
-    class(nams) <- 'cat'
-    nams
+Lcall <- function(fit ,
+                  factors = getFactorNames(fit),
+                  debug = F) {
+  # not currently exported
+  
+  nams <- names(getFix(fit)$fixed)
+  
+  nams <- gsub("^", ":", nams)   # delineate terms
+  nams <- gsub("$", ":", nams)   # delineate terms
+  for (ff in factors)   {
+    ff.string <- paste(ff, "([^:]*)" , sep = '')
+    if (debug)
+      disp(ff.string)
+    ff.rep <- paste(ff, " == \\'\\1\\'", sep = '')
+    if (debug)
+      disp(ff.rep)
+    nams <- gsub(ff.string, ff.rep, nams)
   }
+  nams <- sub("(Intercept)", 1, nams)
+  nams <- gsub("^:", "(", nams)
+  nams <- gsub(":$", ")", nams)
+  nams <- gsub(":", ") * (", nams)
+  nams <-
+    paste("with (data, \n cbind(",
+          paste(nams, collapse = ",\n"),
+          ")\n)\n",
+          collapse = "")
+  class(nams) <- 'cat'
+  nams
+}
 
 disp <- function (x, head = deparse(substitute(x)))
 {

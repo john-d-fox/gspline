@@ -6,12 +6,12 @@
 \usage{
 gspline(x, knots, degree = 3, smoothness = pmax(pmin(degree[-1],
   degree[-length(degree)]) - 1, 0), intercept = 0, constraints = NULL,
-  estimates = NULL, periodic = FALSE, tolerance = 1e-14,
-  stable = FALSE, orthonormalize = stable, rescale = stable,
-  tol = sqrt(.Machine$double.eps), debug = FALSE)
+  estimates = NULL, periodic = FALSE, stable = !missing(x) &&
+  !periodic, rescale = stable, tol.basis = sqrt(.Machine$double.eps),
+  tol.continuity = 1e-14, debug = FALSE)
 }
 \arguments{
-\item{x}{a vector of values that provide an estimate of the range of 
+\item{x}{a vector of values that provide an estimate of the range of
 values over which the closure returned by \code{gspline} will be evaluated.
 It is only used if \code{rescale} and/or \code{orthonormalize} are TRUE.}
 
@@ -60,27 +60,27 @@ are specified to be equal, \code{gspline} uses the maximum for both
 intervals. The continuity constraints associated with the last knot are, in
 effect, continuity constraints at 0.}
 
-\item{tolerance}{largest postive number indistinguishable from 0; i.e.,
-numbers smaller than \code{tolerance} in magnitude are taken to be 0.}
-
 \item{stable}{if TRUE both \code{rescale} and \code{orthonormalize} are
 set to TRUE. Default: FALSE.}
 
-\item{orthonormalize}{if TRUE, transform the spline basis into a equivalent
-orthonormal basis, after rescaling if \code{rescale = TRUE}. 
-The estimated coefficients are not directly interpretable but the 
-\code{\link{wald}} function is designed to compute and display interpretable coefficients.
-To see interpretable estimated coefficients use: \code{wald(model)}. Also, hypothesis
-matrices for the \code{\link{wald}} function are expressed as linear coefficients of
-the interpretable coefficients.  Default: \code{stable}.}
-
 \item{rescale}{if TRUE rescale the argument so it has a range between
 -10 and 10 in order to improve the numerical properties of the spline
-basis. The estimated coefficients are not directly interpretable but the 
+basis. The estimated coefficients are not directly interpretable but the
 \code{\link{wald}} function is designed to compute and display interpretable coefficients.
 To see interpretable estimated coefficients use: \code{wald(model)}. Also, hypothesis
 matrices for the \code{\link{wald}} function are expressed as linear coefficients of
 the interpretable coefficients.  Default: \code{stable}}
+
+\item{tol.continuity}{largest postive number indistinguishable from 0; i.e.,
+numbers smaller than \code{tol.continuity} in magnitude are taken to be 0.}
+
+\item{orthonormalize}{if TRUE, transform the spline basis into a equivalent
+orthonormal basis, after rescaling if \code{rescale = TRUE}.
+The estimated coefficients are not directly interpretable but the
+\code{\link{wald}} function is designed to compute and display interpretable coefficients.
+To see interpretable estimated coefficients use: \code{wald(model)}. Also, hypothesis
+matrices for the \code{\link{wald}} function are expressed as linear coefficients of
+the interpretable coefficients.  Default: \code{stable}.}
 }
 \value{
 \code{gspline} returns a closure (function) that creates portions of
@@ -230,19 +230,19 @@ L <- list("Second derivatives and saltus for female curve at knot at 25" =
 L
 wald(fit, L)
 
-L0 <- list( 
-    "hat" = rbind( 
-         "females at age=20" = c( 1, sp(20), 0, 0 * sp(20)), 
+L0 <- list(
+    "hat" = rbind(
+         "females at age=20" = c( 1, sp(20), 0, 0 * sp(20)),
          "males at age=20"   = c( 1, sp(20), 1, 1* sp(20))),
-    "male-female" = rbind( 
-         "at 20" = c( 0 , 0*sp(20), 1, 1*sp(20)))) 
+    "male-female" = rbind(
+         "at 20" = c( 0 , 0*sp(20), 1, 1*sp(20))))
 wald(fit, L0)
 
 L1 <- list(
-    "D(yhat)/D(age)" = 
-       rbind( "female at age = 25" = c(0, sp(25,1), 0, 0*sp(25,1)), 
+    "D(yhat)/D(age)" =
+       rbind( "female at age = 25" = c(0, sp(25,1), 0, 0*sp(25,1)),
     "male at x = 25" = c(0, sp(25,1), 0, 1*sp(25,1))))
-wald( fit, L1) 
+wald( fit, L1)
 
 # Cubic spline:
 
@@ -252,32 +252,32 @@ sp <- gspline(c(5,10), c(3,3,3), c(2,2))
 # and that the second derivative is continuous at each knot.
 
 # Cubic natural spline:
-# is a cubic spline in bounded intervals with linear components 
+# is a cubic spline in bounded intervals with linear components
 # in each unbounded interval and continuous first derivative at the
 # two knots for unbounded intervals.
 
-sp.natural <- gspline(c(0,5,10,15), c(1,3,3,3,1), c(1,2,2,1)) 
+sp.natural <- gspline(c(0,5,10,15), c(1,3,3,3,1), c(1,2,2,1))
 
-# Quadratic and linear splines and step functions, respectively: 
+# Quadratic and linear splines and step functions, respectively:
 
-sp.quad <- gspline(c(5,10), c(2,2,2), c(1,1)) 
-sp.lin  <- gspline(c(5,10), c(1,1,1), c(0,0)) 
-sp.step  <- gspline(c(5,10), c(0,0,0), c(-1,-1)) 
-          
+sp.quad <- gspline(c(5,10), c(2,2,2), c(1,1))
+sp.lin  <- gspline(c(5,10), c(1,1,1), c(0,0))
+sp.step  <- gspline(c(5,10), c(0,0,0), c(-1,-1))
+
 # When the same degree is used for all
-# intervals and knots, it suffices to give it once: 
+# intervals and knots, it suffices to give it once:
 
-sp.quad <- gspline(c(5,10), 2, 1) 
-sp.lin  <- gspline(c(5,10), 1, 0) 
+sp.quad <- gspline(c(5,10), 2, 1)
+sp.lin  <- gspline(c(5,10), 1, 0)
 sp.step  <- gspline(c(5,10), 0, -1)
-     
+
 # An easy way to specify a model in which a knot is dropped
 # is to force a degree of continuity equal to the degree of adjoining
-# polynomials, e.g.  to drop the knot at 10, use: 
+# polynomials, e.g.  to drop the knot at 10, use:
 
-sp.1 <- gspline(c(5,10), c(3,3,3), c(2,3)) 
-     
-# This is sometimes easier than laboriously rewriting the 
+sp.1 <- gspline(c(5,10), c(3,3,3), c(2,3))
+
+# This is sometimes easier than laboriously rewriting the
 # spline function for each null hypothesis.
 
 # Depending on the maximal degree of the spline, the range of x should not be
@@ -288,9 +288,9 @@ sp.1 <- gspline(c(5,10), c(3,3,3), c(2,3))
 # knots need to be correspondingly transformed.
 
 # The naming of coefficients should allow them to be easily interpreted.  For
-# example: 
+# example:
 
-sp <- gspline(c(3,7), c(2,3,2), c(1,1)) 
+sp <- gspline(c(3,7), c(2,3,2), c(1,1))
 sp(0:10, c(1,1))
 
 
@@ -300,19 +300,19 @@ sp(0:10, c(1,1))
 # third derivative at x = 3 and, finally, the saltus in the second derivative
 # at x = 7.
 
-sp <- gspline (c(3, 7) , c(2,3,2), c(1,2)) 
+sp <- gspline (c(3, 7) , c(2,3,2), c(1,2))
 set.seed(27349) # for reproducibility
-zd <- data.frame( x = seq(0,10, .5), 
-                    y = seq(0,10,.5)^2 + rnorm(21)) 
-fit <- lm( y ~ sp( x ), zd) 
-summary(fit) 
-Ls <- cbind(0, sp(c(1,2,3,3,3,5,7,7,7,8), 
-              D = 2, limit =c(-1,-1,-1,1,0,-1,-1,1,0,-1))) 
+zd <- data.frame( x = seq(0,10, .5),
+                    y = seq(0,10,.5)^2 + rnorm(21))
+fit <- lm( y ~ sp( x ), zd)
+summary(fit)
+Ls <- cbind(0, sp(c(1,2,3,3,3,5,7,7,7,8),
+              D = 2, limit =c(-1,-1,-1,1,0,-1,-1,1,0,-1)))
 zapsmall(Ls )
 
 # Note that estimates of features that are continuous at a point
 # are indicated without a direction for the limit, e.g. "D2(1)"
-# is the second derivative at 1. 
+# is the second derivative at 1.
 
 wald( fit, list( 'second derivatives' = Ls))
 

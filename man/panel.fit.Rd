@@ -73,11 +73,11 @@ lower = with(data, yhat - 2*se), upper = with(data, yhat + 2*se), subscripts
 \examples{
 
 \dontrun{
-  
+
   ###
   ### Exploring possible discontinuity in value of post-secondary education
   ###
- 	 
+
 }
 \dontrun{
 trellis.focus()
