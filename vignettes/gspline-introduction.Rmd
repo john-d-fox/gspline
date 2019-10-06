@@ -208,7 +208,7 @@ Here are the examples from the preceding section, with checks to verify that we 
 ```{r}
 library(gspline)
 sp_pc <- gspline(knots=t, degree=0, smoothness=-1)
-sp_pc
+sp_pc(0:10)
 mod.gsp1 <- lm(y ~ sp_pc(x))
 all.equal(as.vector(yhat1), as.vector(fitted(mod.gsp1)))
 plot(x, y, main="Piecewise Constant Fit Using gspline()")
@@ -223,7 +223,7 @@ lines(seq(0, 10, length=1000),
 ### 3.2 Piecewise Linear Fit (Discontinuous)
 ```{r}
 sp_pl <- gspline(knots=t, degree=1, smoothness=-1)
-sp_pl
+sp_pl(0:10)
 mod.gsp2 <- lm(y ~ sp_pl(x))
 all.equal(as.vector(yhat2), as.vector(fitted(mod.gsp2)))
 ```
@@ -231,7 +231,7 @@ all.equal(as.vector(yhat2), as.vector(fitted(mod.gsp2)))
 ### 3.3 Linear Regression Spline (With Continuity at the Knots)
 ```{r}
 sp_l <- gspline(knots=t, degree=1, smoothness=0)
-sp_l
+sp_l(0:10)
 mod.gsp3 <- lm(y ~ sp_l(x))
 all.equal(as.vector(yhat3), as.vector(fitted(mod.gsp3)))
 ```
@@ -239,7 +239,7 @@ all.equal(as.vector(yhat3), as.vector(fitted(mod.gsp3)))
 ### 3.4 Piecewise Cubic Fit (Discontinuous)
 ```{r}
 sp_pc <- gspline(knots=t, degree=3, smoothness=-1)
-sp_pc
+sp_pc(0:10)
 mod.gsp4 <- lm(y ~ sp_pc(x))
 all.equal(as.vector(yhat4), as.vector(fitted(mod.gsp4)))
 ```
@@ -248,7 +248,7 @@ all.equal(as.vector(yhat4), as.vector(fitted(mod.gsp4)))
 
 ```{r}
 sp_c0 <- gspline(knots=t, degree=3, smoothness=0)
-sp_c0
+sp_c0(0:10)
 mod.gsp5 <- lm(y ~ sp_c0(x))
 all.equal(as.vector(yhat5), as.vector(fitted(mod.gsp5)))
 ```
@@ -257,7 +257,7 @@ all.equal(as.vector(yhat5), as.vector(fitted(mod.gsp5)))
 ### 3.6 Cubic Regression Spline with Smoothness 1 (Matching Slope)
 ```{r}
 sp_c1 <- gspline(knots=t, degree=3, smoothness=1)
-sp_c1
+sp_c1(0:10)
 mod.gsp6 <- lm(y ~ sp_c1(x))
 all.equal(as.vector(yhat6), as.vector(fitted(mod.gsp6)))
 ```
@@ -265,7 +265,7 @@ all.equal(as.vector(yhat6), as.vector(fitted(mod.gsp6)))
 ### 3.7 Cubic Regression Spline with Smoothness 2 (Matching Slope and Curvature)
 ```{r}
 sp_c <- gspline(knots=t, degree=3, smoothness=2)
-sp_c
+sp_c(0:10)
 mod.gsp7 <- lm(y ~ sp_c(x))
 all.equal(as.vector(yhat7), as.vector(fitted(mod.gsp7)))
 ```
@@ -338,7 +338,7 @@ colnames(X) <- c("x1", "x1^2", "x1^3", "x2^3", "x3^3")
 round(X, 5)
 
 sp <- gspline(knots=t, degree=3, smoothness=2)
-sp
+sp(x)
 X.gsp <- sp(x)
 X.gsp
 
@@ -446,7 +446,7 @@ We can specify an equivalent basis using `gspline()` by specifying linear (i.e.,
 sp_ns <- gspline(knots=c(0, 10/3, 20/3, 10), 
              degree=c(1, 3, 3, 3, 1), 
              smoothness=c(2, 2, 2, 2))
-sp_ns
+sp_ns(0:10)
 X.gsp.ns <- sp_ns(x)
 X.gsp.ns
 

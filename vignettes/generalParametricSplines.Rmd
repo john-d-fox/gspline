@@ -431,32 +431,34 @@ pp
 
 # Periodic spline
 
-We add a periodic spline component as a function of months
-using a cubic spline with period 12 and four internal knot at
-$12 \times (1/5 2/5 3/5 4/5)$. 
-```{r}
-per3 <- gspline(knots = 12 * 1:5/5, degree=3, smoothness=2, periodic = TRUE)
-fitper3 <-  lm(unemployment ~ sp3d(year) + per3(month), unemp)
-summary(fitper3)
-unemp$fitper3 <- predict(fitper3)
-pp <- xyplot(unemployment ~ date, unemp, type = 'b',
-             col = 'gray') +
-  layer(panel.lines(x, unemp$fitper3, col = 'blue'))  
-pp
+FIXME! 
 
-```
-We can examine the monthly periodic spline fit
-```{r}
+<!-- We add a periodic spline component as a function of months -->
+<!-- using a cubic spline with period 12 and four internal knot at -->
+<!-- $12 \times (1/5 2/5 3/5 4/5)$.  -->
+<!-- ```{r} -->
+<!-- per3 <- gspline(knots = 12 * 1:5/5, degree=3, smoothness=2, periodic = TRUE) -->
+<!-- fitper3 <-  lm(unemployment ~ sp3d(year) + per3(month), unemp) -->
+<!-- summary(fitper3) -->
+<!-- unemp$fitper3 <- predict(fitper3) -->
+<!-- pp <- xyplot(unemployment ~ date, unemp, type = 'b', -->
+<!--              col = 'gray') + -->
+<!--   layer(panel.lines(x, unemp$fitper3, col = 'blue'))   -->
+<!-- pp -->
 
-pred <- data.frame(month = seq(0,24,.01), year = 0)
-pred$fitper3 <- predict(fitper3, newdata = pred)
-xyplot(fitper3 ~ month, pred, type = 'l',
-       xlim = c(0,24),
-       scales = list( x = list( at =3 * 0:8)),
-       ylab = 'seasonal unemployment') +
-  layer(panel.abline(v = 12))
+<!-- ``` -->
+<!-- We can examine the monthly periodic spline fit -->
+<!-- ```{r} -->
 
-```
+<!-- pred <- data.frame(month = seq(0,24,.01), year = 0) -->
+<!-- pred$fitper3 <- predict(fitper3, newdata = pred) -->
+<!-- xyplot(fitper3 ~ month, pred, type = 'l', -->
+<!--        xlim = c(0,24), -->
+<!--        scales = list( x = list( at =3 * 0:8)), -->
+<!--        ylab = 'seasonal unemployment') + -->
+<!--   layer(panel.abline(v = 12)) -->
+
+<!-- ``` -->
 
 <!-- ## References to incorporate -->
 

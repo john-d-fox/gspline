@@ -2,7 +2,7 @@ Package: gspline
 Type: Package
 Title: Generalized Regression Splines
 Version: 0.6-0
-Date: 2019-10-04
+Date: 2019-10-06
 Authors@R: c(person("Georges", "Monette", role = c("aut", "cre"), email = "random@yorku.ca"),
              person("John", "Fox", role = "aut", email = "jfox@mcmaster.ca"))
 Description: Functions for creating and manipulating generalized parametric regression
