@@ -828,6 +828,8 @@ print.gspline <- function(x,
 print.gspline_matrix <- function(x, ...) {
   xx <- zapsmall(x)
   class(xx) <- "matrix"
+  attr(xx, "rescaled") <- NULL
+  attr(xx, "orthonormalize") <- NULL
   print(xx)
   invisible(x)
 }

@@ -1,7 +1,9 @@
 ---
 title: "An Introduction to Generalized Regression Splines"
 author: "Georges Monette and John Fox"
-date: "2019-06-25"
+date: "2019-10-07"
+bibliography: gspline.bib
+biblio-style: "apalike"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Solving Linear Equations}
@@ -23,17 +25,18 @@ In this vignette, we introduce what we term _generalized regresson splines_ and 
 
 ## 2. Piecewise Polynomials and Regresson Splines
 
-This section presents a succession of increasingly complex segmented polynomial regression models, culminating in traditional cubic regression splines. We show how the models can be fit by manually coding the regressors in the model (i.e., the model matrix). Later on, we'll explain how to fit these models using the `gspline()` ("generalized spline") function, and, where appropriate, the `bs()` ("B-spline") and `ns()` ("natural spline") functions in the **splines** package, which is part of the standard R distribution. For simplicity, we work in this section with a single numeric predictor, $x$, but everything that we do generalizes straightforwardly to numeric predictors in more complex regression models. The exposition here borrows heavily from, but also extends, Fox (2016, Sec. 17.2). A complementary vignette explains the theory underlying our implementation of regression splines.
+This section presents a succession of increasingly complex segmented polynomial regression models, culminating in traditional cubic regression splines. We show how the models can be fit by manually coding the regressors in the model (i.e., the model matrix). Later on, we'll explain how to fit these models using the `gspline()` ("generalized spline") function, and, where appropriate, the `bs()` ("B-spline") and `ns()` ("natural spline") functions in the **splines** package, which is part of the standard R distribution. For simplicity, we work in this section with a single numeric predictor, $x$, but everything that we do generalizes straightforwardly to numeric predictors in more complex regression models. The exposition here borrows heavily from, but also extends, @Fox2016 [Sec. 17.2]. A complementary vignette explains the theory underlying our implementation of regression splines and further develops the topic.
 
 Let's start by randomly generating some nonlinear data:
 ```{r}
 set.seed(12345) # for reproducibility
 x <- runif(200, 0, 10)
 x <- sort(x)
-y <- cos(1.25*(x + 1)) + x/5  + 0.5*rnorm(200)
 Ey <- cos(1.25*(x + 1)) + x/5
+y <- Ey + 0.5*rnorm(200)
 plot(x, y)
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2) # population regression
+f <- function(x) cos(1.25*(x + 1)) + x/5
+curve(f, add=TRUE, lty=2, lwd=2) # population regression
 ```
 
 The line on the graph represents the "true" population regression curve.
@@ -41,14 +44,14 @@ The line on the graph represents the "true" population regression curve.
 _Piecewise polynomials_ begin by dividing the range of $x$ into non-overlapping intervals at $k$ ordered $x$-values $t_j$ called _knots_: $(-\inf, t_1], (t_1, t_2], \ldots, (t_k, \inf)$. Then a degree-$p$ polynomial is fit by least-squares regression to the data in each interval. The simplest case is an degree-0 polynomial, which generates a _piecewise-constant_ fit by computing the mean $y$-value in each interval. For the example, we set $k = 2$ knots at $t_1 = 10/3$ and $t_2 = 2\times10/3$, which are the 1/3 and 2/3 quantiles of the uniform[0, 10] distribution from which the $x$-values were generated. For real data, we can pick knots using sample $x$-quantiles or (as we discuss in another vignette) theoretically interesting transitional points in the data.
 ```{r}
 plot(x, y, main="Piecewise Constant Fit")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 t <- c(10/3, 20/3) # knots
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t) 
 group <- cut(x, breaks=c(-Inf, t, Inf))
 means <- tapply(y, group, mean) # within-interval means
 x0 <- c(0, t, 10) # knots augmented with boundaries
-for (i in 1:3) lines(x0[c(i, i+1)], rep(means[i],2), lwd=2)
+for (i in 1:3) lines(x0[c(i, i+1)], rep(means[i], 2), lwd=2)
 yhat1 <- means[group] # fitted values
 mean((Ey - yhat1)^2) # RMSE
 ```
@@ -60,7 +63,7 @@ A next step is to generalize the model to a _piecewise-linear_ fit (that is, a p
 mods2 <- by(data.frame(x=x, y=y, group=group), group, 
     function(df) lm(y ~ x, data=df)) # within-group linear regressions
 plot(x, y, main="Piecewise Linear Fit")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t) 
 for (j in 1:3){
@@ -99,7 +102,7 @@ x2 <- (x - t[1]) * (x > t[1])
 x3 <- (x - t[2]) * (x > t[2])
 mod3 <- lm(y ~ x1 + x2 + x3) # linear regression spline model
 plot(x, y, main="Linear Regression Spline")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t)
 x01 <- x0
@@ -117,7 +120,7 @@ This approach generalizes readily to higher-degree polyomials, the most common o
 mods4 <- by(data.frame(x=x, y=y, group=group), group, # within-interval cubic regressions
     function(df) lm(y ~ poly(x, degree=3, raw=TRUE), data=df))
 plot(x, y, main="Piecewise Cubic Fit")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t)
 xx <- seq(0, 10, length=500)
@@ -143,7 +146,7 @@ mod5 <- lm(y ~ poly(x1, degree=3, raw=TRUE) +
                poly(x2, degree=3, raw=TRUE) + 
                poly(x3, degree=3, raw=TRUE))
 plot(x, y, main="Cubic Regression Spline with Order-0 Smoothness")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t)
 x01 <- xx
@@ -166,7 +169,7 @@ y_i = \beta_0 + \beta_{11} x_{i1} &+ \beta_{12} x_{i1}^2 + \beta_{13} x_{i1}^3 \
 ```{r}
 mod6 <- lm(y ~ poly(x1, degree=3, raw=TRUE) + I(x2^2) + I(x3^2) + I(x2^3) + I(x3^3))
 plot(x, y, main="Cubic Regression Spline with Order-1 Smoothness")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t)
 lines(xx, predict(mod6, list(x1=x01, x2=x02, x3=x03)), lwd=2)
@@ -182,7 +185,7 @@ This model uses $4 + 2 = 7$, or more generally $4 + k$, parameters, considerably
 ```{r}
 mod7 <- lm(y ~ poly(x1, degree=3, raw=TRUE) + I(x2^3) + I(x3^3))
 plot(x, y, main="Cubic Regression Spline with Order-2 Smoothness")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t)
 lines(xx, predict(mod7, list(x1=x01, x2=x02, x3=x03)), lwd=2)
@@ -192,7 +195,7 @@ mean((Ey - yhat7)^2) # RMSE
 
 ## 3. Using `gspline()` for Fitting Generalized Regression Spline Models
 
-The `gspline()` (*generalized regression spline*) function in the **gspline** package can fit all of the piecewise polynomial and regression spline models in the preceding section, and has substantial flexibility beyond what we have thus far discussed. We'll focus here on 3 arguments to `gspline()` that allow us to reproduce the results of the previous section:
+The `gspline()` (*generalized regression spline*) function in the **gspline** package can fit all of the piecewise polynomial and regression spline models in the preceding section, and has substantial flexibility beyond what we have thus far discussed. We'll focus initially on three arguments to `gspline()` that allow us to reproduce the results of the previous section:
 
 * `knots`: a vector giving the location(s) of the knots; this argument has no default value.
 
@@ -200,7 +203,7 @@ The `gspline()` (*generalized regression spline*) function in the **gspline** pa
 
 * `smooth`: the order of smoothness at the knots, specifying the number of derivatives to be matched on both sides of a knot. Thus `smooth = 2` implies that the fitted regression is continuous at a knot and has equal first (slope) and second (curvature) derivatives on both sides of the knot. The value `smooth = 0`, therefore, insures continuity but nothing more, and the special value `smooth = -1` permits discontinuity, as in a piecewise fit. The default for `smooth` is 1 less than `degree`; thus, for example, for a cubic regression spline the default is `smooth = 2`, matching first and second derivatives. If `degree` is a vector, then the default for `smooth` is 1 less than the minimum degree, but `smooth` may also be a vector of length equal to the number of knots, specifying the number of derivatives to be matched at each knot.
 
-`gspline()` returns a function (or, more technically, a _closure_) that has several arguments, the first of which, `x`, is normally the predictor vector for which we wish to construct a regression spline, and the only argument that we'll describe here. The function returned by `gspline()` can also be used to generate hypothesis matrices for testing characteristics of the resulting fitted model.
+`gspline()` returns a function (or, more technically, a _closure_) that has several arguments, the first of which, `x`, is normally the predictor vector for which we wish to construct a regression spline, and the only argument that we'll describe here. The function returned by `gspline()` can also be used to generate hypothesis matrices for testing characteristics of the resulting fitted model, as we explain in another vignette.
 
 Here are the examples from the preceding section, with checks to verify that we obtain identical results (within rounding error); to reduce redundancy, we've graphed the first example, but not the others:
 
@@ -212,7 +215,7 @@ sp_pc(0:10)
 mod.gsp1 <- lm(y ~ sp_pc(x))
 all.equal(as.vector(yhat1), as.vector(fitted(mod.gsp1)))
 plot(x, y, main="Piecewise Constant Fit Using gspline()")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t) 
 lines(seq(0, 10, length=1000), 
@@ -286,9 +289,9 @@ Only 2 of the models considered above can be fit as B-splines using `bs()`; for 
 ```{r}
 library(splines)
 mod.bs3 <- lm(y ~ bs(x, knots=t, degree=1))
-all.equal( as.vector(fitted(mod.gsp3)), as.vector(fitted(mod.bs3)))
+all.equal(as.vector(fitted(mod.gsp3)), as.vector(fitted(mod.bs3)))
 plot(x, y, main="Linear Regression Spline Using bs()")
-curve(cos(1.25*(x + 1)) + x/5, add=TRUE, lty=2, lwd=2)
+curve(f, add=TRUE, lty=2, lwd=2)
 abline(v=t, lty=3)
 mtext(c(expression(t[1]), expression(t[2])), side=1, line=0.5, at=t)
 lines(seq(0, 10, length=1000), 
@@ -338,7 +341,6 @@ colnames(X) <- c("x1", "x1^2", "x1^3", "x2^3", "x3^3")
 round(X, 5)
 
 sp <- gspline(knots=t, degree=3, smoothness=2)
-sp(x)
 X.gsp <- sp(x)
 X.gsp
 
@@ -397,18 +399,18 @@ The change in the third derivative at each knot is consequently 6 times the coef
 $$
 \begin{array}{ll}
 \dfrac{d^3\mu}{dx^3}\biggr\rvert_{x = t_{1+}} - \dfrac{d^3\mu}{dx^3}\biggr\rvert_{x = t_{1}} &= 6\beta_{23}\\
-\dfrac{d^3\mu}{dx^3}\biggr\rvert_{x = t_{2+}} - \dfrac{d^3\mu}{dx^3}\biggr\rvert_{x = t_{1}} &= 6\beta_{33}\\
+\dfrac{d^3\mu}{dx^3}\biggr\rvert_{x = t_{2+}} - \dfrac{d^3\mu}{dx^3}\biggr\rvert_{x = t_{2}} &= 6\beta_{33}\\
 \end{array}
 $$
 where $\dfrac{d^3\mu}{dx^3}\biggr\rvert_{x = t_{j+}}$ is the third derivative evaluated just to the right of knot $t_j$. 
 
 Moreover, had the spline been a _quadratic_ rather than a cubic regression spline, then the differences in the _second_ derivative at the knots would have been 2 times the corresponding coefficients of the quadratic spline regressors, $2\beta_{22}$ and $2\beta_{23}$; and, finally, had the spline been a _linear_ regression spline, then the differences in the _first_ derivative at the knots would simply have been equal to the corresponding coefficients of the linear spline regressors, $\beta_{12}$ and $\beta_{13}$. 
 
-These observations explain the coding used by `gspline()`, which therefore produces coefficients that directly give differences in the highest-order derivative at the knots (e.g., of the third derivative for a cubic regression spline). This result is reflected in the names of the columns of the model matrix generated by `gspline()`. In the example, `D1|0`, `D2|0`, and `D3|0` are respectively the first, second, and third derivatives at the left boundary (i.e., $x = 0$);  `C3|3.33` is the change in the third derivative (symbolized by "`3`") at the first interior knot ($t_1 = 10/3 \approx 3.33$), and `C3|6.67` is the change in the third derivative at the second interior knot ($t_1 = 20/3 \approx 6.67$).
+These observations explain the coding used by `gspline()`, which therefore produces coefficients that directly give differences in the highest-order derivative at the knots (e.g., of the third derivative for a cubic regression spline). This result is reflected in the names of the columns of the model matrix generated by `gspline()`. In the example, `D1|0`, `D2|0`, and `D3|0` are respectively the first, second, and third derivatives ("`D`") at the left boundary (i.e., $x = 0$);  `C3|3.33` is the change ("`C`") in the third derivative (symbolized by "`3`") at the first interior knot ($t_1 = 10/3 \approx 3.33$), and `C3|6.67` is the change in the third derivative at the second interior knot ($t_1 = 20/3 \approx 6.67$).
 
 ### 5.1 Numerical Conditioning
 
-Although the spline regression bases constructed directly, by `gspline()`, and by `bs()` are equivalent in the sense that they span the same subspace, these bases have different numerical properties. One way to see this is by computing the correlations among the regressors in each case:
+Although the spline regression bases constructed directly by `gspline()` and by `bs()` are equivalent in the sense that they span the same subspace, these bases have different numerical properties. One way to see this is by computing the correlations among the regressors in each case:
 ```{r}
 round(cor(X), 3)
 round(cor(X.gsp), 3)
@@ -426,7 +428,59 @@ Notice that the condition numbers of the augmented `X` and `X.gsp` matrices are 
 
 These observations suggest that if we're interested in regression splines simply for fitting smooth nonlinear regressions, and if the model is expressible as a B-spline, then there's an advantage in using the B-spline basis in preference to the basis constructed by `gspline()`. As we mentioned, the advantages of `gspline()` are in supporting a wider variety of piecewise polynomial and regression spline models and, crucially, in producing interpretable coefficients and hypothesis tests. We illustrate uses of the latter in another vignette.
 
-Finally, modern least-squares algorithms, based for example on the QR and singular-value decompositions, decrease the numerical advantages of having relatively uncorrelated regressors. These methods effectively orthogonalize the model matrix in the process of the computating least-squares fits.
+The `gspline()` function provides a mechanism for generating numerically stable general regression spline bases while maintaining interpretable coefficients---allowing us to have our cake and eat it too. It does so by scaling the predictor $x$ to the range $-10$ to $+10$ and then orthonormalizing the resulting interpretable spline basis (as described above), saving the information necessary to undo these transformations. The `wald()` function uses this information to produce naturally specified and interpretable estimates and tests. The details are given in another vignette, but we develop simple illustrations here.
+
+`gspline()` needs to know the values of the predictor $x$ in order to compute a numerically stable basis for the spline regressors generated from $x$. It does this through the initial (and optional) argument `x`; if `x` is specified then the resulting spline-generating function returns a scaled and orthonormal basis; if `x` is absent, then `gspline()` behaves as in the preceding examples in this vignette.
+
+Consider the earlier examples in this section, for which
+```{r}
+x
+t
+```
+Then
+```{r}
+sp.stable <- gspline(x, knots=t, degree=3, smoothness=2)
+X.gspst <- sp.stable(x)
+X.gspst
+all.equal(fitted(lm(X.gsp ~ X.gspst - 1)), X.gsp, 
+          check.attributes=FALSE) # span the same space
+zapsmall(crossprod(X.gspst)) # orthonormal
+round(cor(X.gspst), 3) # smaller correlations
+kappa(cbind(1, X.gspst)) # better conditioned
+```
+
+The rows and columns of the matrix returned by `sp.stable()` are unnamed, because they no longer have the straightforward interpretations that they had in the 'raw' spline bases considered previously. As mentioned, however, `wald()` can reconstruct the parameters implied by the raw parametrization. To see how this works, let's return to the artificial data generated in Section 2 of the vignette:
+```{r}
+set.seed(12345)
+x <- runif(200, 0, 10)
+x <- sort(x)
+Ey <- cos(1.25*(x + 1)) + x/5
+y <- Ey + 0.5*rnorm(200)
+```
+
+Now let's use `gspline()` to fit two equivalent models, one with raw and the other with stable cubic regression splines:
+```{r}
+sp.raw <- gspline(knots= c(10/3, 20/3))
+sp.st <- gspline(x, knots= c(10/3, 20/3))
+mod.raw <- lm(y ~ sp.raw(x))
+mod.st <- lm(y~ sp.st(x))
+all.equal(fitted(mod.raw), fitted(mod.st))
+kappa(model.matrix(mod.raw))
+kappa(model.matrix(mod.st))
+```
+The fits to the data are equivalent, but the model matrix for the stable fit is much better conditioned. 
+
+Of course, the coefficients for the two fits differ---those for the raw fit are directly interpretable, while those for the numerically stable fit are not: 
+```{r}
+coef(mod.raw)
+coef(mod.st)
+```
+Yet `wald()` can recover the raw coefficients from the numerically stable fit:
+```{r}
+wald(mod.raw)
+wald(mod.st) # identical
+```
+The first line of output in each case shows the omnibus $F$-test for the 6 regression spline coefficients, and the subsequent table gives identical estimates, standard errors, tests, and confidence limits for the individual interpretable coefficients.
 
 ## Natural Splines
 
@@ -436,6 +490,7 @@ Because of the condition that the regression is linear beyond the boundaries, na
 
 To illustrate, we continue the example from the preceding section, with $x = (0, 1, 2, \ldots, 10)$, $k = 2$ interior knots at 10/3 and 20/3, and boundary knots at 0 and 10:
 ```{r}
+x <- 0:10
 X.ns <- ns(x, knots=c(10/3, 20/3), Boundary.knots=c(0, 10))
 round(X.ns, 5)
 ```
@@ -446,10 +501,11 @@ We can specify an equivalent basis using `gspline()` by specifying linear (i.e.,
 sp_ns <- gspline(knots=c(0, 10/3, 20/3, 10), 
              degree=c(1, 3, 3, 3, 1), 
              smoothness=c(2, 2, 2, 2))
-sp_ns(0:10)
 X.gsp.ns <- sp_ns(x)
 X.gsp.ns
 
 all.equal(fitted(lm(X.ns ~ X.gsp - 1)), X.ns, check.attributes=FALSE)
 ```
 Notice that `gspline()` doesn't distinguish between interior and boundary knots, and that the distinction is imposed implicitly by the distribution of the $x$-values and the specification of the `degree` and `smoothness` arguments. Because all of the values of `smoothness` are equal to 2, we could have specified `smoothness=2`, but we entered the argument as a 4-element vector to emphasize the number of constraints placed on the derivatives.
+
+## Reference
