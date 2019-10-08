@@ -42,6 +42,10 @@
 #' these.
 #' @param clevel level for confidence intervals. No confidence intervals if
 #' \code{clevel} is \code{NULL}.
+#' @param p.adjust a method to adjust p-values for simultaneous inference,
+#' using the \code{\link[stats]{p.adjust}} function. The available methods are in
+#' \code{\link[stats]{p.adjust.methods}}, and the default is \code{"holm"}. To suppress
+#' adjusted p-values, specifcy \code{p.adjust="none"}.
 #' @param pred (default \code{NULL}) a data frame to use to create a model
 #' matrix.  This is an alternative to `full` when the model matrix needs to be
 #' based on a data frame other than the data frame used for fitting the model.
@@ -138,6 +142,7 @@
 wald <- function(fit,
                  L. = "",
                  clevel = 0.95,
+                 p.adjust = "holm",
                  pred = NULL,
                  data = NULL,
                  debug = FALSE ,
@@ -151,6 +156,8 @@ wald <- function(fit,
                  tol.df = 1e6,
                  tol.qr = 1e-10,
                  ...) {
+  
+  p.adjust <- match.arg(p.adjust, choices = stats::p.adjust.methods)
   dataf <- function(x, ...) {
     x <- cbind(x)
     rn <- rownames(x)
@@ -375,6 +382,10 @@ wald <- function(fit,
       "p-value" = 2 * pt(abs(etahat / etasd), denDF, lower.tail = FALSE)
     )
     colnames(aod)[ncol(aod)] <- 'p-value'
+    if (p.adjust != "none" && length(pvals <- aod[, "p-value"]) > 1){
+      aod <- cbind(aod, stats::p.adjust(pvals, method=p.adjust))
+      colnames(aod)[ncol(aod)] <- 'adj.p-value'
+    }
     if (debug)
       disp(aod)
     if (!is.null(clevel)) {
@@ -438,6 +449,9 @@ print.wald <- function(x, round = 6, ...) {
     rowlab <- attr(te, "labs")
     
     te[, 'p-value'] <- pformat(te[, 'p-value'])
+    if ('adj.p-value' %in% colnames(te)){
+      te[, 'adj.p-value'] <- pformat(te[, 'adj.p-value'])
+    }
     if (!is.null(round)) {
       for (ii in seq_along(te)) {
         te[[ii]] <- rnd(te[[ii]], digits = round)
