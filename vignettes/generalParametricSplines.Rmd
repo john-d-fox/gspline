@@ -1,7 +1,7 @@
 ---
 title: "General Parametric Splines in gspline"
-author: ""
-date: "2019-06-25"
+author: "Georges Monette and John Fox"
+date: "2019-10-08"
 output: rmarkdown::pdf_document
 link-citations: yes
 vignette: >
@@ -391,13 +391,13 @@ unemp <- within(
   })
 summary(unemp)
 quintiles <- quantile(unemp$year, 1:4/5)
-sp2 <- gspline(quintiles, 2, 1) # quadratic spline
-sp3 <- gspline(quintiles, 3, 2) # cubic spline    
+sp2 <- gspline(knots = quintiles, degree = 2, smoothness = 1) # quadratic spline
+sp3 <- gspline(knots = quintiles, degree = 3, smoothness = 2) # cubic spline    
 
 quintiles_with_crash <- sort(c(quintiles, toyear(as.Date('2008-12-15'))))
 
-sp2d <- gspline(quintiles_with_crash, 2, c(1,1,-1,1,1))
-sp3d <- gspline(quintiles_with_crash, 3,  c(2,2,-1,2,2))
+sp2d <- gspline(knots=quintiles_with_crash, degree = 2, smoothness = c(1,1,-1,1,1))
+sp3d <- gspline(knots = quintiles_with_crash, degree = 3,  smoothness = c(2,2,-1,2,2))
 
 fit2 <- lm(unemployment ~ sp2(year), unemp)
 summary(fit2)
@@ -431,37 +431,34 @@ pp
 
 # Periodic spline
 
-FIXME! 
+We add a periodic spline component as a function of months
+using a cubic spline with period 12 and four internal knot at
+$12 \times (1/5 2/5 3/5 4/5)$.
+```{r}
+per3 <- gspline(knots = 12 * 1:5/5, degree=3, smoothness=2, periodic = TRUE)
+fitper3 <-  lm(unemployment ~ sp3d(year) + per3(month), unemp)
+summary(fitper3)
+unemp$fitper3 <- predict(fitper3)
+pp <- xyplot(unemployment ~ date, unemp, type = 'b',
+             col = 'gray') +
+  layer(panel.lines(x, unemp$fitper3, col = 'blue'))
+pp
 
-<!-- We add a periodic spline component as a function of months -->
-<!-- using a cubic spline with period 12 and four internal knot at -->
-<!-- $12 \times (1/5 2/5 3/5 4/5)$.  -->
-<!-- ```{r} -->
-<!-- per3 <- gspline(knots = 12 * 1:5/5, degree=3, smoothness=2, periodic = TRUE) -->
-<!-- fitper3 <-  lm(unemployment ~ sp3d(year) + per3(month), unemp) -->
-<!-- summary(fitper3) -->
-<!-- unemp$fitper3 <- predict(fitper3) -->
-<!-- pp <- xyplot(unemployment ~ date, unemp, type = 'b', -->
-<!--              col = 'gray') + -->
-<!--   layer(panel.lines(x, unemp$fitper3, col = 'blue'))   -->
-<!-- pp -->
+```
+We can examine the monthly periodic spline fit
+```{r}
+pred <- data.frame(month = seq(0,24,.01), year = 0.0)
+pred$fitper3 <- predict(fitper3, newdata = pred)
+xyplot(fitper3 ~ month, pred, type = 'l',
+       xlim = c(0,24),
+       scales = list( x = list( at =3 * 0:8)),
+       ylab = 'seasonal unemployment') +
+  layer(panel.abline(v = 12))
 
-<!-- ``` -->
-<!-- We can examine the monthly periodic spline fit -->
-<!-- ```{r} -->
+```
 
-<!-- pred <- data.frame(month = seq(0,24,.01), year = 0) -->
-<!-- pred$fitper3 <- predict(fitper3, newdata = pred) -->
-<!-- xyplot(fitper3 ~ month, pred, type = 'l', -->
-<!--        xlim = c(0,24), -->
-<!--        scales = list( x = list( at =3 * 0:8)), -->
-<!--        ylab = 'seasonal unemployment') + -->
-<!--   layer(panel.abline(v = 12)) -->
+## References to incorporate
 
-<!-- ``` -->
-
-<!-- ## References to incorporate -->
-
-<!-- - [Spline derivatives](https://pdfs.semanticscholar.org/6215/21606c14c81655990e8e1aa2615aef059be5.pdf) -->
+- [Spline derivatives](https://pdfs.semanticscholar.org/6215/21606c14c81655990e8e1aa2615aef059be5.pdf)
 
 
