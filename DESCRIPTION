@@ -9,7 +9,7 @@ Description: Functions for creating and manipulating generalized parametric regr
   splines, including hypothesis testing.
 Depends: R (>= 3.5.0)
 Imports: stats, lme4, nlme, methods, lattice, latticeExtra
-Suggests: knitr, rmarkdown, car
+Suggests: knitr, rmarkdown, car, testthat, splines
 License: GPL (>= 2)
 LazyLoad: yes
 LazyData: yes
