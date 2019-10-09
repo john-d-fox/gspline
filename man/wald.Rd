@@ -6,10 +6,11 @@
 \alias{print.wald}
 \title{Wald Test of a General Linear Hypothesis for the 'Fixed' Portion of a Model}
 \usage{
-wald(fit, L. = "", clevel = 0.95, p.adjust = "holm", pred = NULL,
-  data = NULL, debug = FALSE, maxrows = 25, full = FALSE,
-  fixed = FALSE, invert = FALSE, method = "svd", df = NULL,
-  pars = NULL, tol.df = 1e+06, tol.qr = 1e-10, ...)
+wald(fit, L. = "", clevel = 0.95, p.adjust = "holm",
+  adjust = c("all", "each"), pred = NULL, data = NULL,
+  debug = FALSE, maxrows = 25, full = FALSE, fixed = FALSE,
+  invert = FALSE, method = "svd", df = NULL, pars = NULL,
+  tol.df = 1e+06, tol.qr = 1e-10, ...)
 
 \method{print}{wald}(x, round = 6, ...)
 
@@ -29,6 +30,13 @@ these.}
 using the \code{\link[stats]{p.adjust}} function. The available methods are in
 \code{\link[stats]{p.adjust.methods}}, and the default is \code{"holm"}. To suppress
 adjusted p-values, specifcy \code{p.adjust="none"}.}
+
+\item{adjust}{if \code{"all"} (the default), and \code{p.adjust} isn't set to \code{"none"}, then when there are multiple hypothesis
+matrices, the overall test for each hypotheses is adjusted for all of  the hypotheses
+and the p-values for the individual hypothesis parameters are adjusted across all of the
+hypotheses; if \code{"each"} then the p-value for the overall test for each hypothesis 
+isn't adjusted and the p-values for the individual parameters are adjusted separately
+for each hypothesis matrix.}
 
 \item{pred}{(default \code{NULL}) a data frame to use to create a model
 matrix.  This is an alternative to `full` when the model matrix needs to be

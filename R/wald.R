@@ -46,6 +46,12 @@
 #' using the \code{\link[stats]{p.adjust}} function. The available methods are in
 #' \code{\link[stats]{p.adjust.methods}}, and the default is \code{"holm"}. To suppress
 #' adjusted p-values, specifcy \code{p.adjust="none"}.
+#' @param adjust if \code{"all"} (the default), and \code{p.adjust} isn't set to \code{"none"}, then when there are multiple hypothesis
+#' matrices, the overall test for each hypotheses is adjusted for all of  the hypotheses
+#' and the p-values for the individual hypothesis parameters are adjusted across all of the
+#' hypotheses; if \code{"each"} then the p-value for the overall test for each hypothesis 
+#' isn't adjusted and the p-values for the individual parameters are adjusted separately
+#' for each hypothesis matrix.
 #' @param pred (default \code{NULL}) a data frame to use to create a model
 #' matrix.  This is an alternative to `full` when the model matrix needs to be
 #' based on a data frame other than the data frame used for fitting the model.
@@ -143,6 +149,7 @@ wald <- function(fit,
                  L. = "",
                  clevel = 0.95,
                  p.adjust = "holm",
+                 adjust = c("all", "each"),
                  pred = NULL,
                  data = NULL,
                  debug = FALSE ,
@@ -158,6 +165,8 @@ wald <- function(fit,
                  ...) {
   
   p.adjust <- match.arg(p.adjust, choices = stats::p.adjust.methods)
+  adjust <- match.arg(adjust)
+  
   dataf <- function(x, ...) {
     x <- cbind(x)
     rn <- rownames(x)
@@ -382,7 +391,7 @@ wald <- function(fit,
       "p-value" = 2 * pt(abs(etahat / etasd), denDF, lower.tail = FALSE)
     )
     colnames(aod)[ncol(aod)] <- 'p-value'
-    if (p.adjust != "none" && length(pvals <- aod[, "p-value"]) > 1){
+    if (p.adjust != "none" && adjust == "each" && length(pvals <- aod[, "p-value"]) > 1){
       aod <- cbind(aod, stats::p.adjust(pvals, method=p.adjust))
       colnames(aod)[ncol(aod)] <- 'adj.p-value'
     }
@@ -417,6 +426,29 @@ wald <- function(fit,
     ret[[ii]]$data <- data.attr
   }
   
+  if (p.adjust != "none" && adjust == "all"){
+    p.coefs <- lapply(ret, function(rt) rt$estimate[, "p-value"])
+    p.coefs.all <- unlist(p.coefs)
+    n.coefs <- sapply(p.coefs, length)
+    if (sum(n.coefs) > 1){
+      n.cum.coefs <- cumsum(n.coefs) - n.coefs + 1
+      p.adj <- stats::p.adjust(p.coefs.all, method=p.adjust)
+      p.hyps <- sapply(ret, function(rt) rt$anova$"p-value")
+      p.hyps.adjusted <- stats::p.adjust(p.hyps, method=p.adjust)
+      for (ii in seq_along(ret)){
+        aod <- ret[[ii]]$estimate
+        aod <- cbind(aod[, 1:5], 
+                     p.adj[n.cum.coefs[ii]:(n.cum.coefs[ii] + n.coefs[ii] - 1)],
+                     aod[, 6:7])
+        colnames(aod)[6] <- 'adj.p-value'
+        ret[[ii]]$estimate <- aod
+        anova <- ret[[ii]]$anova
+        anova$"adj.p-value" <- if (length(L.) > 1) p.hyps.adjusted[ii]
+        ret[[ii]]$anova <- anova
+      }
+    }
+  }
+  
   names(ret) <- names(L.)
   attr(ret, "class") <- "wald"
   ret
@@ -444,6 +476,7 @@ print.wald <- function(x, round = 6, ...) {
     ta <- tt$anova
     
     ta[["p-value"]] <- pformat(ta[["p-value"]])
+    if (!is.null(ta[["adj.p-value"]])) ta[["adj.p-value"]] <- pformat(ta[["adj.p-value"]])
     print(as.data.frame(ta, row.names = nn))
     te <- tt$estimate
     rowlab <- attr(te, "labs")
