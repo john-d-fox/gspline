@@ -59,7 +59,7 @@ Panel function to display predicted values and SE bands using
 \details{
 With \code{\link[latticeExtra]{layer}} and \code{glayer} in
 \pkg{latticeExtra}, \code{panel.fit} can be used to generate fitted values
-and confidence or prediction bands that have render correctly whether a plot
+and confidence or prediction bands that render correctly whether a plot
 uses \var{groups} or not.
 
 If a data frame, \code{data}, is used to fit a model and contains variables

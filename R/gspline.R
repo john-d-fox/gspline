@@ -1,3 +1,8 @@
+#  Stable splines:
+#  - centering and scaling X
+#  - orthogonalize spline basis
+#  - orthogonalize spline basis wrt to intercept
+#
 #' General Parametric Regression Splines With Variable Degrees and Smoothness
 #'
 #' This function creates functions (closures) that implement general polynomial
@@ -166,6 +171,14 @@
 #' -10 and 10 in order to improve the numerical properties of the spline
 #' basis. 
 #' 
+#' @ortho2intercept if \code{TRUE} (the default is the value of \code{stable}),
+#' the spline basis is replaced with a basis for the 
+#' orthogonal complement to the 1-vector in the space spanned by the 
+#' 1-vector and the spline basis. This is thought to improve 
+#' the numerical properties of the fitted model but will produce incorrect
+#' results for some models that don't satisfy the principle of marginality, 
+#' for example if a model does not include an intercept term.
+#' 
 #' The estimated coefficients are not directly interpretable if \code{stable} or  \code{rescale} 
 #' is \code{TRUE}, but the  \code{\link{wald}} function is designed to compute and display 
 #' interpretable coefficients.
@@ -317,6 +330,7 @@ gspline <- function(x,
                     periodic = FALSE,
                     stable = !missing(x) && !periodic,
                     rescale = stable,
+                    ortho2intercept = stable,
                     tol.basis = sqrt(.Machine$double.eps),
                     tol.continuity = 1e-14,
                     debug = FALSE) {
@@ -762,13 +776,19 @@ gspline <- function(x,
   
   ffun <- if (!missing(x) && (stable || rescale)) {
     if (rescale) {
-      ran <- range(x)
-      a <- mean(ran)
-      b <- 20 / (ran[2] - ran[1])   # rescaled x goes from -10 to 10
+      if(!periodic) {
+        ran <- range(x)
+        a <- mean(ran)
+        b <- 20 / (ran[2] - ran[1])   # rescaled x goes from -10 to 10
+      } else {  # if periodic
+        a <- 0
+        b <- 10 / knots[length(knots)]
+      }
       fun_scaled <- gspline(
         knots = (knots - a) * b,
         degree = degree,
         smoothness = smoothness,
+        periodic = periodic, 
         intercept = (intercept - a) * b,
         stable = FALSE
       )
@@ -782,6 +802,9 @@ gspline <- function(x,
         else
           fun(x)
         colnames(ret) <- NULL
+        # make basis orthogonal to intercept term GM:2019_10_11
+        if(ortho2intercept && !periodic) 
+          ret <- sweep(ret, 2, colMeans(ret))
         if (stable)
           ret <- orth_basis(ret)
       }
@@ -789,6 +812,8 @@ gspline <- function(x,
         attr(ret, 'rescaled') <- c(a = a, b = b)
       if (stable)
         attr(ret, 'orthonormalize') <- TRUE
+       if (ortho2intercept)
+        attr(ret, 'ortho2intercept') <- TRUE
       class(ret) <- c('gspline_matrix', class(ret))
       ret
     }

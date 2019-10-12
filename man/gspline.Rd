@@ -7,8 +7,9 @@
 gspline(x, knots, degree = 3, smoothness = pmax(pmin(degree[-1],
   degree[-length(degree)]) - 1, 0), intercept = 0, constraints = NULL,
   estimates = NULL, periodic = FALSE, stable = !missing(x) &&
-  !periodic, rescale = stable, tol.basis = sqrt(.Machine$double.eps),
-  tol.continuity = 1e-14, debug = FALSE)
+  !periodic, rescale = stable, ortho2intercept = stable,
+  tol.basis = sqrt(.Machine$double.eps), tol.continuity = 1e-14,
+  debug = FALSE)
 }
 \arguments{
 \item{x}{an optional vector of values that provide an estimate of the range of
@@ -67,14 +68,7 @@ orthonormal basis, after rescaling if \code{rescale = TRUE}.}
 \item{rescale}{if \code{TRUE} (the default is the value of \code{stable}), 
 rescale the \code{x} argument so it has a range between
 -10 and 10 in order to improve the numerical properties of the spline
-basis. 
-
-The estimated coefficients are not directly interpretable if \code{stable} or  \code{rescale} 
-is \code{TRUE}, but the  \code{\link{wald}} function is designed to compute and display 
-interpretable coefficients.
-To see interpretable estimated coefficients use \code{wald(model)}. Also, hypothesis
-matrices for the \code{\link{wald}} function are expressed as linear combinations of
-the interpretable coefficients.}
+basis.}
 
 \item{tol.continuity, tol.basis}{zero tolerances: largest postive number indistinguishable from 0.}
 
