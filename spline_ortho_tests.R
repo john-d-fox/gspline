@@ -197,3 +197,35 @@ pmods <- list(fitpraw, fitpstable, fitpno.rescale,
 lapply(pmods, summary) # similar
 lapply(pmods, wald)    # similar
 
+#'
+##' Periodic splines with no intercept ----
+#'
+#'
+fitpraw <- lm(y ~ spp(x) -1, dd)
+fitpstable <- lm(y ~ spps(x) -1, dd)
+fitpno.rescale <- lm(y ~ sppsnr(x) -1, dd)
+fitpno.orth <- lm(y ~ sppsno(x) - 1, dd)
+fitpno.orth.rescale <- lm(y ~ sppsnor(x) -1, dd)
+
+
+
+dd$yhat__raw <- predict(fitpraw, newdata = dd)
+dd$yhat__stable <- predict(fitpstable, newdata = dd)
+dd$yhat__no.rescale <- predict(fitpno.rescale, newdata = dd)
+dd$yhat__no.orth <- predict(fitpno.orth, newdata = dd)
+dd$yhat__no.orth.rescale <- predict(fitpno.orth.rescale, newdata = dd)
+
+ddl <- spida2::tolong(dd, sep = '__')
+head(ddl)
+spida2::gd(lty=1:5, fill = c('red','blue'))
+xyplot(yhat ~ x, ddl, groups = time, type = 'l', auto.key = T) +
+xyplot(y ~ x, ddx, pch = 21, cex = 2) 
+
+
+pmods <- list(fitpraw, fitpstable, fitpno.rescale,
+             fitpno.orth, fitpno.orth.rescale)
+lapply(pmods, summary) # similar
+lapply(pmods, wald)    # similar
+
+
+
