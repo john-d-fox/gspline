@@ -70,6 +70,21 @@ rescale the \code{x} argument so it has a range between
 -10 and 10 in order to improve the numerical properties of the spline
 basis.}
 
+\item{ortho2intercept}{if \code{TRUE} (the default is the value of \code{stable}),
+the spline basis is replaced with a basis for the 
+orthogonal complement to the 1-vector in the space spanned by the 
+1-vector and the spline basis. This should improve 
+the numerical properties of the fitted model but will produce incorrect
+results for some models that don't satisfy the principle of marginality, 
+for example if a model does not include an intercept term.
+
+The estimated coefficients are not directly interpretable if \code{stable} or  \code{rescale} 
+is \code{TRUE}, but the  \code{\link{wald}} function is designed to compute and display 
+interpretable coefficients in this situation.
+To see interpretable estimated coefficients use \code{wald(model)}. Also, hypothesis
+matrices for the \code{\link{wald}} function are expressed as linear combinations of
+the \emph{interpretable} coefficients.}
+
 \item{tol.continuity, tol.basis}{zero tolerances: largest postive number indistinguishable from 0.}
 
 \item{debug}{if \code{TRUE} (default is \code{FALSE}) print additional information.}
