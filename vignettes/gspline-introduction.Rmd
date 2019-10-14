@@ -1,7 +1,7 @@
 ---
 title: "An Introduction to Generalized Regression Splines"
 author: "Georges Monette and John Fox"
-date: "2019-10-07"
+date: "2019-10-13"
 bibliography: gspline.bib
 biblio-style: "apalike"
 output: rmarkdown::html_vignette
@@ -17,11 +17,11 @@ knitr::opts_chunk$set(echo = TRUE, fig.width=6.5, fig.height=6.5)
 
 ## 1. Introduction
 
-_Regression splines_ are piecewise polynomials that are constrained to join smoothly at boundaries called _knots_. Regression splines are traditionally introduced as an alternative to other methods for modeling nonlinear relationships, such as data transformations, polynomial regression, and nonparametric regression. Unlike power and related transformations, regression splines can handle relationships that are nonmonotone or complex; unlike polynomial regression, which is highly nonlocal, in the sense that $x$-values in one region of the predictor space can strongly affect the fit of the model in another region, regression splines provide fits that are sensitive to local characteristics of the data; and unlike nonparametric regression, regression splines are fully parametric and are implemented by introducing regressors (a _regression-spline basis_) into the model matrix for a linear or similar parametric regression model with a linear predictor, such as a generalized linear model or a linear or generalized linear mixed-effects model. 
+_Regression splines_ are piecewise polynomials that are constrained to join smoothly at boundaries called _knots_. Regression splines are traditionally introduced as an alternative to other methods for modeling nonlinear relationships, such as data transformations, polynomial regression, and nonparametric regression. Unlike power and related transformations, regression splines can handle relationships that are nonmonotone or complex; unlike polynomial regression, which is highly nonlocal, in the sense that $x$-values in one region of the predictor space can strongly affect the fit of the model in another region, regression splines provide fits that are sensitive to local characteristics of the data; and unlike nonparametric regression, regression splines are fully parametric and are implemented by introducing regressors (a _regression-spline basis_) into the model matrix for a linear or similar parametric regression model with a linear predictor, such as a generalized linear model or a linear or generalized linear mixed-effects model. For essentially these reasons, @Harrell2015, for example, advocates the routine use of regression splines in linear and similar regression models.
 
 It is, however, also usual _not_ to focus on the estimated parameters for a regression spline and instead to represent the fit of the model graphically. Indeed, traditional regression-spline bases, such as B-splines, are selected for numerical stability rather than for interpretability. Although the emphasis on graphical interpretation makes sense, it also represents a missed opportunity.
 
-In this vignette, we introduce what we term _generalized regresson splines_ and the `gspline()` function in the **gspline** package, which implements them.
+In this vignette, we introduce what we term _generalized regresson splines_ and the `gspline()` function in the **gspline** package, which implements them. The vignette focuses on how to use `gspline()` to generate simple regression splines, including splines that are equivalent to familiar B-splines and natural splines. Another vignette develops the much greater generality and flexibility supported by `gspline()`.
 
 ## 2. Piecewise Polynomials and Regresson Splines
 
@@ -428,9 +428,19 @@ Notice that the condition numbers of the augmented `X` and `X.gsp` matrices are 
 
 These observations suggest that if we're interested in regression splines simply for fitting smooth nonlinear regressions, and if the model is expressible as a B-spline, then there's an advantage in using the B-spline basis in preference to the basis constructed by `gspline()`. As we mentioned, the advantages of `gspline()` are in supporting a wider variety of piecewise polynomial and regression spline models and, crucially, in producing interpretable coefficients and hypothesis tests. We illustrate uses of the latter in another vignette.
 
-The `gspline()` function provides a mechanism for generating numerically stable general regression spline bases while maintaining interpretable coefficients---allowing us to have our cake and eat it too. It does so by scaling the predictor $x$ to the range $-10$ to $+10$ and then orthonormalizing the resulting interpretable spline basis (as described above), saving the information necessary to undo these transformations. The `wald()` function uses this information to produce naturally specified and interpretable estimates and tests. The details are given in another vignette, but we develop simple illustrations here.
+The `gspline()` function provides a mechanism for generating numerically stable general regression spline bases while maintaining interpretable coefficients---allowing us to have our cake and eat it too. It does so by scaling the predictor $x$ to the range $-10$ to $+10$; orthonormalizing the resulting interpretable spline basis (as described above); and transforming the spline regressors to orthogonality with the constant regressor (i.e., for the intercept). `gspline()` also saves the information necessary to undo these transformations. The `wald()` function uses this information to produce naturally specified and interpretable estimates and tests. The details are given in another vignette, but we develop simple illustrations here.
 
 `gspline()` needs to know the values of the predictor $x$ in order to compute a numerically stable basis for the spline regressors generated from $x$. It does this through the initial (and optional) argument `x`; if `x` is specified then the resulting spline-generating function returns a scaled and orthonormal basis; if `x` is absent, then `gspline()` behaves as in the preceding examples in this vignette.
+
+Providing a bit more detail, the creation of a stable spline basis is controlled by three arguments:
+
+1. `stable`: if `TRUE` (the default if the `x` argument is specified and inapplicable if it is not), transform the spline basis into a equivalent orthonormal basis after possible rescaling of `x`.
+
+2. `rescale`: if `TRUE` (the default is the value of `stable`), rescale `x` to the range between $-10$ and $10$.
+
+3. `ortho2intercept`: if `TRUE` (the default is the value of `stable`), the spline basis is replaced with a basis for the orthogonal complement to the 1-vector in the space spanned by the 1-vector and the spline basis. 
+
+The defaults for these arguments are chosen to provide a numerically stable basis in the most common circumstances, but the `ortho2intercept` argument in particular must be set carefully: If the model violates the principle of marginality (for example by failing to include the constant regressor), then the resulting basis for the regression spline will not be constructed correctly.
 
 Consider the earlier examples in this section, for which
 ```{r}
@@ -442,14 +452,15 @@ Then
 sp.stable <- gspline(x, knots=t, degree=3, smoothness=2)
 X.gspst <- sp.stable(x)
 X.gspst
-all.equal(fitted(lm(X.gsp ~ X.gspst - 1)), X.gsp, 
+all.equal(fitted(lm(cbind(1, X.gsp) ~ X.gspst)), 
+          cbind(1, X.gsp), 
           check.attributes=FALSE) # span the same space
 zapsmall(crossprod(X.gspst)) # orthonormal
-round(cor(X.gspst), 3) # smaller correlations
+round(cor(X.gspst), 3) # uncorrelated
 kappa(cbind(1, X.gspst)) # better conditioned
 ```
 
-The rows and columns of the matrix returned by `sp.stable()` are unnamed, because they no longer have the straightforward interpretations that they had in the 'raw' spline bases considered previously. As mentioned, however, `wald()` can reconstruct the parameters implied by the raw parametrization. To see how this works, let's return to the artificial data generated in Section 2 of the vignette:
+The rows and columns of the matrix returned by `sp.stable()` are unnamed, because they no longer have the straightforward interpretations that they had in the 'raw' spline bases considered previously. As mentioned, however, `wald()` can reconstruct the parameters implied by the raw parametrization. To see how this works, let's return to the artificial data generated in Section 2 of the vignette (and regenerated here):
 ```{r}
 set.seed(12345)
 x <- runif(200, 0, 10)
@@ -460,15 +471,15 @@ y <- Ey + 0.5*rnorm(200)
 
 Now let's use `gspline()` to fit two equivalent models, one with raw and the other with stable cubic regression splines:
 ```{r}
-sp.raw <- gspline(knots= c(10/3, 20/3))
-sp.st <- gspline(x, knots= c(10/3, 20/3))
+sp.raw <- gspline(knots=c(10/3, 20/3))
+sp.st <- gspline(x, knots=c(10/3, 20/3))
 mod.raw <- lm(y ~ sp.raw(x))
-mod.st <- lm(y~ sp.st(x))
+mod.st <- lm(y ~ sp.st(x))
 all.equal(fitted(mod.raw), fitted(mod.st))
 kappa(model.matrix(mod.raw))
 kappa(model.matrix(mod.st))
 ```
-The fits to the data are equivalent, but the model matrix for the stable fit is much better conditioned. 
+The fits to the data are equivalent, but the model matrix for the stable fit is *much* better conditioned. 
 
 Of course, the coefficients for the two fits differ---those for the raw fit are directly interpretable, while those for the numerically stable fit are not: 
 ```{r}
@@ -480,7 +491,7 @@ Yet `wald()` can recover the raw coefficients from the numerically stable fit:
 wald(mod.raw)
 wald(mod.st) # identical
 ```
-The first line of output in each case shows the omnibus $F$-test for the 6 regression spline coefficients, and the subsequent table gives identical estimates, standard errors, tests, and confidence limits for the individual interpretable coefficients.
+The first line of output in each case shows the omnibus $F$-test for the intercept and the 5 regression spline coefficients, and the subsequent table gives identical estimates, standard errors, tests, and confidence limits for the individual interpretable coefficients. By default, the `print()` method for `"wald"` objects shows "adjusted" as well as "raw" two-sided $p$-values for the individual coefficient tests. The adjustment is made using the standard R function `p.adjust()` with (again by default) the Holm method. In this example, the raw and adjusted $p$-values are indistinguishable because the very small $p$-values for the spline coefficients are all rounded to $<.00001$.
 
 ## Natural Splines
 
@@ -508,4 +519,4 @@ all.equal(fitted(lm(X.ns ~ X.gsp - 1)), X.ns, check.attributes=FALSE)
 ```
 Notice that `gspline()` doesn't distinguish between interior and boundary knots, and that the distinction is imposed implicitly by the distribution of the $x$-values and the specification of the `degree` and `smoothness` arguments. Because all of the values of `smoothness` are equal to 2, we could have specified `smoothness=2`, but we entered the argument as a 4-element vector to emphasize the number of constraints placed on the derivatives.
 
-## Reference
+## References 

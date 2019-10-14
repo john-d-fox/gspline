@@ -851,10 +851,16 @@ print.gspline <- function(x,
 #' @method print gspline_matrix
 #' @export
 print.gspline_matrix <- function(x, ...) {
+  header <- paste(if (!is.null(attr(x, "rescaled"))) "rescaled = TRUE", 
+                  if (!is.null(attr(x, "orthonormalize"))) "stable = TRUE",
+                  if (!is.null(attr(x, "ortho2intercept"))) "ortho2intercept = TRUE",
+                  sep="; ")
+  if (!is.null(header)) cat("\n", header, "\n")
   xx <- zapsmall(x)
   class(xx) <- "matrix"
   attr(xx, "rescaled") <- NULL
   attr(xx, "orthonormalize") <- NULL
+  attr(xx,"ortho2intercept") <- NULL
   print(xx)
   invisible(x)
 }
