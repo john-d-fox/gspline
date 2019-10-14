@@ -8,7 +8,7 @@ Authors@R: c(person("Georges", "Monette", role = c("aut", "cre"), email = "rando
 Description: Functions for creating and manipulating generalized parametric regression
   splines, including hypothesis testing.
 Depends: R (>= 3.5.0)
-Imports: stats, lme4, nlme, methods, lattice, latticeExtra
+Imports: stats, lme4, nlme, methods, lattice, latticeExtra, utils
 Suggests: knitr, rmarkdown, car, testthat, splines
 License: GPL (>= 2)
 LazyLoad: yes

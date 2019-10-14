@@ -48,3 +48,17 @@ getModelData <- function(model) {
   valid <- make.names(cols) == cols | grepl("^\\(.*\\)$", cols)
   data1[valid]
 }
+
+#' View the Official Hex Sticker for the gspline Package
+#' 
+#' Open the official hex sticker for the \pkg{gspline} package in your browser.
+#' 
+#' @author Georges Monette and John Fox
+#' @examples 
+#' \dontrun{
+#' gsplineHexsticker()
+#' }
+#' @export
+gsplineHexsticker <- function(){
+  utils::browseURL(paste0("file://", system.file("etc", "gspline-hex.pdf", package="gspline")))
+}
