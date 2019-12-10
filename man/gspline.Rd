@@ -4,10 +4,11 @@
 \alias{gspline}
 \title{General Parametric Regression Splines With Variable Degrees and Smoothness}
 \usage{
-gspline(x, knots, degree = 3, smoothness = pmax(pmin(degree[-1],
-  degree[-length(degree)]) - 1, 0), intercept = 0, constraints = NULL,
-  estimates = NULL, periodic = FALSE, stable = !missing(x) &&
-  !periodic, rescale = stable, ortho2intercept = stable,
+gspline(x = NULL, knots = NULL, degree = 3,
+  smoothness = pmax(pmin(degree[-1], degree[-length(degree)]) - 1, 0),
+  intercept = 0, constraints = NULL, estimates = NULL,
+  periodic = FALSE, stable = !missing(x) && !periodic,
+  rescale = stable, ortho2intercept = stable,
   tol.basis = sqrt(.Machine$double.eps), tol.continuity = 1e-14,
   debug = FALSE)
 }

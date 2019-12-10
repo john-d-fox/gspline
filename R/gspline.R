@@ -326,8 +326,8 @@
 #' # Note that some coefficients that are 0 by design may lead to invalid degrees
 #' # of freedom and t-values.
 #' @export
-gspline <- function(x,
-                    knots,
+gspline <- function(x = NULL,
+                    knots = NULL,
                     degree = 3,
                     smoothness = pmax(pmin(degree[-1], degree[-length(degree)]) - 1, 0),
                     intercept = 0,
@@ -714,7 +714,7 @@ gspline <- function(x,
   colnames(G) <- rownames(estimate_mat)
   
   # create closure
-  fun <- function(x, D = NULL, limit = 1) {
+  fun <- function(x = NA, D = NULL, limit = 1) {
     if (is.null(D)) {
       ret <-
         Xf(x, knots, max_degree, periodic = periodic) %*% G # model matrix
@@ -802,7 +802,7 @@ gspline <- function(x,
         stable = FALSE
       )
     }
-    function(x, D = NULL, limit = 1) {
+    function(x = NA, D = NULL, limit = 1) {
       if (inwald() || !is.null(D)) {
         ret <- fun(x, D, limit)
       } else {
@@ -843,6 +843,7 @@ print.gspline <- function(x,
                                    'estimate_mat'),
                           ...) {
   cat('Spline function created by gspline\n')
+  envr <- environment(x)
   ret <-
     Filter(Negate(is.function),  sapply(ls(environment(x)), get, environment(x)))
   ret <-
