@@ -3,6 +3,12 @@
 #  - orthogonalize spline basis
 #  - orthogonalize spline basis wrt to intercept
 #
+# 2019_12_10 - GM
+# - fixed ortho_basis so it returns the right size of matrix
+#   if the input is not of full rank ... thus not returning
+#   a basis, but a basis with appended columns of 0's to fill
+#   the matrix so it has the same shape as the input
+#
 #' General Parametric Regression Splines With Variable Degrees and Smoothness
 #'
 #' This function creates functions (closures) that implement general polynomial
@@ -351,7 +357,10 @@ gspline <- function(x,
   orth_basis  <- function(X) {
     # returns orthonormal basis using the SVD
     ud <- svd(X, nv = 0)
-    ud$u[, ud$d > tol.basis, drop = FALSE]
+    ret <- ud$u[, ud$d > tol.basis, drop = FALSE]
+    ret <- c(ret, rep(0,length(X) - length(ret)))
+    X[] <- ret
+    X
   }
   
   Cmat <- function(knots,
