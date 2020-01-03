@@ -825,7 +825,7 @@ getFactorNames.data.frame <- function(object, ...) {
 
 getFactorNames.default <-
   function(object, ...)
-    getFactorNames(getData(object))
+    getFactorNames(getModelData(object))
 
 print.cat <- function(x, ...) {
   cat(x)
@@ -906,7 +906,7 @@ Lmat <- function(fit,
 #' matrix
 #' @return a design matrix
 #' @export getX
-getX <- function(fit, data = getData(fit)) {
+getX <- function(fit, data = getModelData(fit)) {
   f <- formula(fit)
   if (length(f) == 3)
     f <- f[-2]
@@ -1014,7 +1014,7 @@ as.data.frame.wald <- function(x,
 #' }
 #'
 #' @export Lform
-Lform <- function(fit, form, data = getData(fit)) {
+Lform <- function(fit, form, data = getModelData(fit)) {
   if (missing(form))
     return (Lcall(fit))
   gg <- getFix(fit)

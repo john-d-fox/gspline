@@ -4,13 +4,22 @@
 \alias{gspline}
 \title{General Parametric Regression Splines With Variable Degrees and Smoothness}
 \usage{
-gspline(x = NULL, knots = NULL, degree = 3,
+gspline(
+  x = NULL,
+  knots = NULL,
+  degree = 3,
   smoothness = pmax(pmin(degree[-1], degree[-length(degree)]) - 1, 0),
-  intercept = 0, constraints = NULL, estimates = NULL,
-  periodic = FALSE, stable = !missing(x) && !periodic,
-  rescale = stable, ortho2intercept = stable,
-  tol.basis = sqrt(.Machine$double.eps), tol.continuity = 1e-14,
-  debug = FALSE)
+  intercept = 0,
+  constraints = NULL,
+  estimates = NULL,
+  periodic = FALSE,
+  stable = !missing(x) && !periodic,
+  rescale = stable,
+  ortho2intercept = stable,
+  tol.basis = sqrt(.Machine$double.eps),
+  tol.continuity = 1e-14,
+  debug = FALSE
+)
 }
 \arguments{
 \item{x}{an optional vector of values that provide an estimate of the range of
@@ -298,13 +307,13 @@ sp.1 <- gspline(knots=c(5,10), degree=c(3, 3, 3), smoothness=c(2, 3))
 # This is sometimes easier than laboriously rewriting the
 # spline function for each null hypothesis.
 
-# Depending on the maximal degree of the spline, the range of \\code{x} should not be
+# Depending on the maximal degree of the spline, the range of \code{x} should not be
 # excessive to avoid numerical problems. The spline matrix generated is 'raw'
 # and values of max(abs(x))^max(degree) may appear in the matrix.  For
 # example, for a cubic spline, it might be desirable to rescale x and/or
 # recenter x so abs(x) < 100 if that is not already the case. Note that the
 # knots need to be correspondingly transformed. This is done automatically if
-# the argument \\code{rescale=TRUE}.
+# the argument \code{rescale=TRUE}.
 
 # The naming of coefficients should allow them to be easily interpreted.  For
 # example:

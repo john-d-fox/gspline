@@ -346,11 +346,17 @@ gspline <- function(x = NULL,
   #orthonormalize <- stable
   
   basis  <- function(X) {
+    # basis is a misnomer, this should be called 'span'
     # returns linearly independent columns with possible pivoting
     q <- qr(X, tol.basis = tol.basis)
     sel <- q$pivot[seq_len(q$rank)]
     ret <- X[, sel, drop = FALSE]
     colnames(ret) <- colnames(X)[sel]
+    if(ncol(ret) < nrow(ret)) {
+      zeros <- matrix(0, nrow(ret), nrow(ret) - ncol(ret))
+      colnames(zeros) <- colnames(X)[-sel]
+      ret <- cbind(ret, zeros)
+    }
     ret
   }
   
@@ -875,8 +881,11 @@ print.gspline_matrix <- function(x, ...) {
   invisible(x)
 }
 
+
+
 #' @method knots gspline
 #' @export
 knots.gspline <- function(Fn, ...) {
   environment(Fn)$knots
 }
+
