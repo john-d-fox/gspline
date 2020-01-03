@@ -38,11 +38,13 @@ derivatives of the spline function.
 \details{
 This function makes a number of assumptions:
 
-- The variable that is the argument of the spline does not appear
+\itemize{
+\item The variable that is the argument of the spline does not appear
   elsewhere than as the argument of the spline. 
-- The spline function may interact with other variables, but
+\item The spline function may interact with other variables, but
   only variables that are not functions of the spline variable.
-- The spline function may appear more than once but only additively.
+\item The spline function may appear more than once but only additively.
+}
 
 The function can be used to estimate the value of the spline by setting
 the parameter, D (the order of the derivative) to 0. This can be useful
