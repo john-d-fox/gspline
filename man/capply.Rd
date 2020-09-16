@@ -32,7 +32,7 @@ the number of elements in each cluster.}
 \item{by}{If \code{x} is a vector: a 'factor' of the same lenth as \code{x}
 whose levels identify clusters.  If \code{x} is a data frame, a one-sided
 formula that identifies the variable(s) within \code{x} to be used to
-clusters.}
+create clusters.}
 
 \item{fmla}{in \code{capply.formula}, fmla is a two-sided formula as in
 \code{\link{aggregate.formula}}. The left-hand side identifies the
@@ -41,7 +41,7 @@ the variables in the right-hand side of the formula.}
 }
 \value{
 When the result in each cell is a scalar, \code{capply} can be used
-     to for multilevel analysis to produce 'contextual variables' computed within
+     in multilevel analyses to produce 'contextual variables' computed within
      subgroups of the data and expanded to a constant over elements of each
      subgroup.
 

@@ -4,10 +4,12 @@
 \name{Unemployment}
 \alias{Unemployment}
 \title{Canadian Monthly Unemployment Rate}
-\format{A data frame with 290 observations on the following 2 variables.
+\format{
+A data frame with 290 observations on the following 2 variables.
 \describe{ \item{date}{a \code{"Date"} object.}
 
-\item{unemployment}{Percentage unemployed.} }}
+\item{unemployment}{Percentage unemployed.} }
+}
 \source{
 Downloaded from \url{https://research.stlouisfed.org/} on
 2019-03-18.

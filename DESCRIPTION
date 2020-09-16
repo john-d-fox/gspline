@@ -16,4 +16,4 @@ LazyData: yes
 Encoding: UTF-8
 VignetteBuilder: knitr, rmarkdown
 NeedsCompilation: no
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
