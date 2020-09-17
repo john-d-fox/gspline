@@ -7,12 +7,22 @@
 \alias{knots.gspline}
 \title{General Parametric Regression Splines With Variable Degrees and Smoothness}
 \usage{
-gspline(knots, degree = 3, smoothness = pmax(pmin(degree[-1],
-  degree[-length(degree)]) - 1, 0), intercept = 0, constraints = NULL,
-  estimates = NULL, periodic = FALSE, tolerance = 1e-14)
+gspline(
+  knots,
+  degree = 3,
+  smoothness = pmax(pmin(degree[-1], degree[-length(degree)]) - 1, 0),
+  intercept = 0,
+  constraints = NULL,
+  estimates = NULL,
+  periodic = FALSE,
+  tolerance = 1e-14
+)
 
-\method{print}{gspline}(x, show = c("knots", "degree", "smoothness", "G",
-  "constraint_mat", "estimate_mat"), ...)
+\method{print}{gspline}(
+  x,
+  show = c("knots", "degree", "smoothness", "G", "constraint_mat", "estimate_mat"),
+  ...
+)
 
 \method{print}{gspline_matrix}(x, ...)
 

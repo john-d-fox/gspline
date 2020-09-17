@@ -4,10 +4,20 @@
 \alias{gspline2}
 \title{General Parametric Regression Splines With Variable Degrees and Smoothness}
 \usage{
-gspline2(x, knots, degree = 3, smoothness = pmax(pmin(degree[-1],
-  degree[-length(degree)]) - 1, 0), intercept = 0, constraints = NULL,
-  estimates = NULL, periodic = FALSE, tolerance = 1e-14,
-  orthonormalize = FALSE, D = NULL, limit = 1)
+gspline2(
+  x,
+  knots,
+  degree = 3,
+  smoothness = pmax(pmin(degree[-1], degree[-length(degree)]) - 1, 0),
+  intercept = 0,
+  constraints = NULL,
+  estimates = NULL,
+  periodic = FALSE,
+  tolerance = 1e-14,
+  orthonormalize = FALSE,
+  D = NULL,
+  limit = 1
+)
 }
 \arguments{
 \item{x}{TODO}

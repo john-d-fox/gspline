@@ -4,8 +4,24 @@
 \alias{panel.fit}
 \title{Panel function for predicted values and SE bands}
 \usage{
-panel.fit(x, y, fit, lower, upper, subscripts, ..., type, group.number,
-  alpha, col, col.line, col.symbol, border = F, font, fontface)
+panel.fit(
+  x,
+  y,
+  fit,
+  lower,
+  upper,
+  subscripts,
+  ...,
+  type,
+  group.number,
+  alpha,
+  col,
+  col.line,
+  col.symbol,
+  border = F,
+  font,
+  fontface
+)
 }
 \arguments{
 \item{x, y}{these are place holders for the arguments that are automatically

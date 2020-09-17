@@ -6,14 +6,35 @@
 \alias{print.wald}
 \title{Wald Test of a General Linear Hypothesis for the 'Fixed' Portion of a Model}
 \usage{
-wald(fit, Llist = "", clevel = 0.95, pred = NULL, data = NULL,
-  debug = FALSE, maxrows = 25, full = FALSE, fixed = FALSE,
-  invert = FALSE, method = "svd", df = NULL, pars = NULL, ...)
+wald(
+  fit,
+  Llist = "",
+  clevel = 0.95,
+  pred = NULL,
+  data = NULL,
+  debug = FALSE,
+  maxrows = 25,
+  full = FALSE,
+  fixed = FALSE,
+  invert = FALSE,
+  method = "svd",
+  df = NULL,
+  pars = NULL,
+  ...
+)
 
 \method{print}{wald}(x, round = 6, ...)
 
-\method{as.data.frame}{wald}(x, row.names = NULL, optional, se = 2,
-  digits = 3, sep = "", which = 1, ...)
+\method{as.data.frame}{wald}(
+  x,
+  row.names = NULL,
+  optional,
+  se = 2,
+  digits = 3,
+  sep = "",
+  which = 1,
+  ...
+)
 }
 \arguments{
 \item{fit}{a model for which a \code{getFix} method exists.}
